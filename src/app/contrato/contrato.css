@@ -301,4 +301,7 @@
   .ct-parties {
     grid-template-columns: 1fr;
   }
+  .ct-clauses p {
+    text-align: left;
+  }
 }
