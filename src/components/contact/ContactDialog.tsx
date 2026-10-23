@@ -83,7 +83,7 @@ export default function ContactDialog({ dialogRef, service, setService, services
         </div>
       ) : (
         <>
-          <p>Conte o que você precisa. A gente retorna rapidinho com o melhor caminho.</p>
+          <p>Conte o que você precisa. A gente retorna com o melhor caminho para o seu projeto.</p>
           <form id="brief-form" ref={formRef} action={action}>
             <label>
               Seu nome
@@ -124,6 +124,16 @@ export default function ContactDialog({ dialogRef, service, setService, services
                 rows={3}
               />
             </label>
+            <label className="consent">
+              <input type="checkbox" name="consent" value="sim" required />
+              <span>
+                Autorizo a Gardsoft a usar estes dados para responder ao meu contato, conforme a{" "}
+                <a href="/privacidade" target="_blank" rel="noopener">
+                  Política de privacidade
+                </a>
+                .
+              </span>
+            </label>
             <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hp" aria-hidden="true" />
             {UTM_KEYS.map((key) => (
               <input key={key} type="hidden" name={key} value={utm[key]} />
@@ -137,7 +147,9 @@ export default function ContactDialog({ dialogRef, service, setService, services
               </p>
             )}
           </form>
-          <small className="preview-note">Seus dados são usados apenas para retornarmos o contato.</small>
+          <small className="preview-note">
+            Pedimos só o necessário para retornar. Você pode pedir a exclusão dos seus dados quando quiser.
+          </small>
         </>
       )}
     </dialog>

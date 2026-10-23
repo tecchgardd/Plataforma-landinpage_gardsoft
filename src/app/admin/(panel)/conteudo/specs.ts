@@ -184,6 +184,9 @@ export const sections: SectionSpec[] = [
               { value: "sea", label: "Oceano (azul-petróleo)" },
               { value: "glass", label: "Vidro (cinza-azulado)" },
               { value: "music", label: "Palco (laranja)" },
+              { value: "pet", label: "Pet (turquesa e rosa)" },
+              { value: "rodeo", label: "Rodeio (vermelho e preto)" },
+              { value: "pampa", label: "Pampa (verde-mate)" },
             ],
           },
           { type: "text", key: "kicker", label: "Chamada pequena da ilustração" },
@@ -241,7 +244,8 @@ export const sections: SectionSpec[] = [
   {
     key: "testimonials",
     title: "Avaliações",
-    description: "Depoimentos de clientes em carrossel.",
+    description:
+      "Depoimentos de clientes em carrossel. Use só depoimentos reais, com autorização do cliente (CDC e LGPD). Sem nenhum, a seção e o link do menu ficam ocultos.",
     anchor: "avaliacoes",
     fields: [
       ...heading,

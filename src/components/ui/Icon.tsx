@@ -1,6 +1,8 @@
 const paths = {
   arrow: "M7 17 17 7M8 7h9v9",
   arrowDown: "M12 5v14M6 13l6 6 6-6",
+  chevronLeft: "m15 5-7 7 7 7",
+  chevronRight: "m9 5 7 7-7 7",
   landing: "M4 5h16v14H4zM4 9h16M8 13h5M8 16h8",
   site: "M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18",
   system: "M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z",

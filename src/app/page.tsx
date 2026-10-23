@@ -11,18 +11,22 @@ import Testimonials from "@/components/landing/Testimonials";
 import FAQ from "@/components/landing/FAQ";
 import Footer, { FinalCTA, WhatsAppFloat } from "@/components/landing/Footer";
 import { getSiteContent } from "@/lib/content";
+import { getLegalInfo } from "@/lib/legal";
+import { nav } from "@/data/site";
 
 // A página é estática; o portal regenera ao salvar conteúdo. O intervalo é só uma garantia extra.
 export const revalidate = 300;
 
 export default async function Page() {
-  const content = await getSiteContent();
+  const [content, legal] = await Promise.all([getSiteContent(), getLegalInfo()]);
+  // Sem depoimentos reais a seção não aparece, e o link do menu some junto.
+  const navItems = content.testimonials.items.length ? nav : nav.filter((item) => item.href !== "#avaliacoes");
   const { whatsapp } = content.site;
   return (
     <ContactProvider services={content.services.items.map((s) => s.contact).filter(Boolean)} whatsapp={whatsapp}>
       <Effects />
-      <Header />
-      <main>
+      <Header items={navItems} />
+      <main id="conteudo">
         <Hero content={content.hero} />
         <Marquee items={content.marquee.items} />
         <Services content={content.services} />
@@ -35,8 +39,10 @@ export default async function Page() {
         <FAQ content={content.faq} />
         <FinalCTA content={content.finalCta} />
       </main>
-      <Footer settings={content.site} services={content.services.items} content={content.footer} />
-      <WhatsAppFloat whatsapp={whatsapp} />
+      <Footer navItems={navItems} legal={legal} settings={content.site} services={content.services.items} content={content.footer} />
+      <aside aria-label="Contato rápido">
+        <WhatsAppFloat whatsapp={whatsapp} />
+      </aside>
     </ContactProvider>
   );
 }

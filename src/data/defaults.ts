@@ -12,7 +12,7 @@ const hero: SiteContent["hero"] = {
   highlight: "negócios.",
   typedPrefix: "> criamos",
   typedWords: ["sites", "landing pages", "sistemas", "automações"],
-  lead: "A gente tira sua ideia do papel e transforma em tecnologia sob medida: rápida, bonita e pronta para trazer novos clientes para o seu negócio.",
+  lead: "A gente tira sua ideia do papel e transforma em tecnologia sob medida: rápida, bonita e pensada para atrair novos clientes para o seu negócio.",
   primaryCta: "Quero tirar minha ideia do papel",
   secondaryCta: "Ver cases de sucesso",
   pillars: ["Design exclusivo", "Código moderno", "Atendimento direto"],
@@ -76,40 +76,44 @@ const services: SiteContent["services"] = {
   ],
 };
 
-/* TEXTO PROVISÓRIO: substitua pela sua história real em /admin/conteudo. */
 const story: SiteContent["story"] = {
   eyebrow: "02 · Como surgiu a Gardsoft",
-  title: "Uma história construída",
-  highlight: "linha por linha.",
-  text: "A Gardsoft começou com uma inquietação: ver negócios incríveis perdendo espaço por não terem uma presença digital à altura do que entregam.",
-  quote: "Toda grande ideia merece sair do papel. A Gardsoft nasceu para isso.",
+  title: "Do chão da infraestrutura",
+  highlight: "ao código que gera negócios.",
+  text: "Antes de escrever a primeira linha de código, foram anos resolvendo problemas reais de quem depende da tecnologia para trabalhar. É dessa base que nasce a Gardsoft.",
+  quote: "Toda ideia simples pode ficar grande quando alguém cuida dela de verdade. A Gardsoft nasceu para isso.",
   quoteAuthor: "Fundador da Gardsoft",
   chapters: [
     {
-      label: "O começo",
-      title: "Uma paixão que virou propósito",
-      text: "Tudo começou com a curiosidade por tecnologia e a vontade de criar coisas que resolvessem problemas reais. Cada linha de código era um passo para entender como o digital podia mudar a rotina das pessoas.",
+      label: "2019 · Exército Brasileiro",
+      title: "Disciplina e o primeiro contato com a tecnologia",
+      text: "A jornada começou no Exército Brasileiro, atuando como técnico. Foi ali que nasceram a disciplina, o senso de responsabilidade e o gosto por manter tudo funcionando — mesmo quando ninguém está olhando.",
     },
     {
-      label: "O primeiro projeto",
-      title: "Uma ideia ganhou forma",
-      text: "O primeiro projeto veio de uma conversa simples com um empreendedor que precisava ser encontrado na internet. Ver aquela ideia no ar — e os primeiros contatos chegando — mostrou o caminho a seguir.",
+      label: "Iniciativa privada",
+      title: "Suporte e infraestrutura N1, N2 e N3",
+      text: "Depois de pedir baixa, veio a iniciativa privada. Do atendimento ao usuário até a infraestrutura mais crítica, cada nível de suporte ensinou a ouvir, diagnosticar e resolver o problema de quem precisa da tecnologia para trabalhar.",
+    },
+    {
+      label: "Estrada profissional",
+      title: "Experiência em empresas de peso",
+      text: "MSI Tecnologia, Grupo Geração, Costão do Santinho e Compupack: ambientes diferentes, desafios diferentes e a mesma missão — fazer a operação rodar. Em paralelo, veio a decisão de ir além e estudar Análise e Desenvolvimento de Sistemas na UniCesusc.",
     },
     {
       label: "Nasce a Gardsoft",
-      title: "Tecnologia com identidade",
-      text: "Daí surgiu a Gardsoft: um estúdio que une design, código e estratégia para proteger e impulsionar negócios. O escudo da marca representa isso — cuidar do projeto do cliente como se fosse nosso.",
+      title: "Tirar ideias do papel e enriquecê-las",
+      text: "Entre o Grupo Geração e o Costão do Santinho, a Gardsoft foi fundada com um propósito claro: trazer algo novo, pegar ideias — por mais simples que fossem — e transformá-las em soluções completas. O escudo da marca representa isso: cuidar do projeto do cliente como se fosse nosso.",
     },
     {
       label: "Hoje",
-      title: "Do papel para o digital",
-      text: "Hoje ajudamos empresas de diferentes segmentos a conquistar seu espaço on-line, com atendimento próximo, comunicação clara e soluções sob medida para cada momento do negócio.",
+      title: "Infraestrutura no DNA, produto na entrega",
+      text: "Hoje a Gardsoft cria sites, landing pages, sistemas e automações para negócios de diferentes segmentos — da música gaúcha aos pescados e ao pet shop. A bagagem de infraestrutura se traduz em projetos rápidos, seguros e estáveis; o desenvolvimento, em ferramentas pensadas para o resultado do negócio.",
     },
   ],
   values: [
     { title: "Proximidade", text: "Você fala direto com quem constrói o seu projeto." },
+    { title: "Base sólida", text: "Anos de suporte e infraestrutura por trás de cada entrega." },
     { title: "Transparência", text: "Etapas, prazos e entregas sempre claros." },
-    { title: "Qualidade", text: "Cuidado com cada detalhe, do pixel ao código." },
   ],
 };
 
@@ -130,7 +134,7 @@ const cases: SiteContent["cases"] = {
       summary:
         "Uma vitrine premium para apresentar os produtos, transmitir frescor e levar o cliente direto ao pedido.",
       tags: ["Landing page", "Mobile first", "WhatsApp"],
-      image: "",
+      image: "/assets/cases/mm-pescados.jpg",
       video: "",
       published: true,
     },
@@ -145,22 +149,97 @@ const cases: SiteContent["cases"] = {
       summary:
         "Site institucional com serviços, portfólio e contato, reforçando a credibilidade da marca na região.",
       tags: ["Site institucional", "SEO", "Portfólio"],
-      image: "",
+      image: "/assets/cases/ca-vidracaria.jpg",
       video: "",
       published: true,
     },
     {
       name: "GD Coração Gaúcho",
-      type: "Landing page",
-      segment: "Música & entretenimento",
+      type: "Site institucional",
+      segment: "Dança & tradição gaúcha",
       url: "https://landpage-gdcoracaogaucho.vercel.app/",
       theme: "music",
-      kicker: "A nossa essência é a música",
-      headline: "Coração Gaúcho.",
+      kicker: "Tradição · Cultura · Família",
+      headline: "O coração da tradição gaúcha bate aqui.",
       summary:
-        "Landing page para o grupo divulgar agenda, músicas e facilitar a contratação de shows.",
-      tags: ["Landing page", "Agenda", "Contratação"],
-      image: "",
+        "Site do grupo de danças com bilheteria para os eventos, turmas do curso de dança, álbuns de formatura e blog.",
+      tags: ["Site institucional", "Bilheteria", "Blog"],
+      image: "/assets/cases/gd-coracao-gaucho.jpg",
+      video: "",
+      published: true,
+    },
+    {
+      name: "Aloha Pet",
+      type: "Landing page",
+      segment: "Pet care",
+      url: "https://alohapet-landinpage-upjw.vercel.app/",
+      theme: "pet",
+      kicker: "Banho & tosa · Vet em casa",
+      headline: "Banho com carinho. Cuidado que dá para sentir.",
+      summary:
+        "Landing page que reúne banho e tosa, veterinário em domicílio e pet shop, com agendamento direto pelo WhatsApp.",
+      tags: ["Landing page", "Agendamento", "WhatsApp"],
+      image: "/assets/cases/aloha-pet.jpg",
+      video: "",
+      published: true,
+    },
+    {
+      name: "Portal Gaúcho",
+      type: "Site institucional",
+      segment: "Música & entretenimento",
+      url: "https://portalgaucho.vercel.app/",
+      theme: "rodeo",
+      kicker: "Fandango e vaneira desde 1999",
+      headline: "O Tranco Véio mais famoso do Brasil.",
+      summary:
+        "Site completo do grupo com história, músicos, clipes, discografia e contratação de shows com mensagem pronta no WhatsApp.",
+      tags: ["Site institucional", "Discografia", "Contratação"],
+      image: "/assets/cases/portal-gaucho.jpg",
+      video: "",
+      published: true,
+    },
+    {
+      name: "CA Esquadrias",
+      type: "Landing page",
+      segment: "Arquitetura & construção",
+      url: "https://caesquadrias-pvc.vercel.app/",
+      theme: "glass",
+      kicker: "Esquadrias sob medida · Palhoça/SC",
+      headline: "Esquadrias de alumínio sob medida.",
+      summary:
+        "Página focada em orçamento: fachadas, esquadrias termoacústicas e portões, com prova social das avaliações no Google.",
+      tags: ["Landing page", "Orçamento", "Prova social"],
+      image: "/assets/cases/ca-esquadrias.jpg",
+      video: "",
+      published: true,
+    },
+    {
+      name: "Chê Lokedo",
+      type: "Landing page",
+      segment: "Música & entretenimento",
+      url: "https://chelokedo.vercel.app/",
+      theme: "music",
+      kicker: "O baile é dos guri",
+      headline: "A gaita puxa, a galera canta e a noite vira história.",
+      summary:
+        "Página do artista com clipes, agenda de bailes por RS, SC e PR, material de imprensa e contratação com a produção.",
+      tags: ["Landing page", "Press kit", "Contratação"],
+      image: "/assets/cases/che-lokedo.jpg",
+      video: "",
+      published: true,
+    },
+    {
+      name: "Grupo Mate Amargo",
+      type: "Site institucional",
+      segment: "Música & entretenimento",
+      url: "https://grupomateamargo-landindpage.vercel.app/",
+      theme: "pampa",
+      kicker: "Forquilhinha/SC · desde 2015",
+      headline: "A alma gaúcha. A energia do baile.",
+      summary:
+        "Site com história, discografia, playlist de clipes, agenda e contato direto com os integrantes para fechar datas.",
+      tags: ["Site institucional", "Agenda", "Downloads"],
+      image: "/assets/cases/mate-amargo.jpg",
       video: "",
       published: true,
     },
@@ -226,44 +305,13 @@ const processSection: SiteContent["process"] = {
   ctaButton: "Agendar meu briefing",
 };
 
-/* EXEMPLOS PROVISÓRIOS: substitua por depoimentos reais antes de publicar. */
+/* Só depoimentos reais, com autorização do cliente. Sem nenhum, a seção e o link do menu ficam ocultos. */
 const testimonials: SiteContent["testimonials"] = {
   eyebrow: "05 · Avaliações",
   title: "Quem confiou,",
   highlight: "recomenda.",
   text: "O que nossos clientes dizem sobre a experiência de construir com a Gardsoft.",
-  items: [
-    {
-      text: "Atendimento próximo do início ao fim. Entenderam exatamente o que eu precisava e o resultado superou o que eu imaginava.",
-      name: "Nome do cliente",
-      role: "Empresário · Alimentação",
-    },
-    {
-      text: "O site ficou moderno, rápido e com a cara da nossa empresa. Os clientes elogiam e os contatos aumentaram.",
-      name: "Nome do cliente",
-      role: "Diretor · Construção",
-    },
-    {
-      text: "Processo muito organizado: cada etapa era apresentada e aprovada. Nunca fiquei sem saber como estava o projeto.",
-      name: "Nome do cliente",
-      role: "Músico · Entretenimento",
-    },
-    {
-      text: "A automação que fizeram economiza horas da nossa semana. Hoje não imagino a operação sem ela.",
-      name: "Nome do cliente",
-      role: "Gestora · Serviços",
-    },
-    {
-      text: "Tirou minha ideia do papel com muita agilidade. Comunicação clara e entrega dentro do combinado.",
-      name: "Nome do cliente",
-      role: "Empreendedor · Varejo",
-    },
-    {
-      text: "Profissionalismo e cuidado com cada detalhe. Recomendo para quem quer crescer no digital.",
-      name: "Nome do cliente",
-      role: "Proprietária · Beleza",
-    },
-  ],
+  items: [],
 };
 
 const faq: SiteContent["faq"] = {

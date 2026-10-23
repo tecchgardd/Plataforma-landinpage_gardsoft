@@ -51,7 +51,7 @@ export const caseSchema = z.object({
   type: str(60),
   segment: str(60),
   url,
-  theme: z.enum(["sea", "glass", "music"]),
+  theme: z.enum(["sea", "glass", "music", "pet", "rodeo", "pampa"]),
   kicker: str(80),
   headline: str(120),
   summary: str(400),

@@ -1,7 +1,9 @@
 import Logo, { LogoMark } from "@/components/brand/Logo";
 import Icon, { type IconName } from "@/components/ui/Icon";
 import { ContactButton } from "@/components/contact/ContactProvider";
-import { nav, site, whatsappLink } from "@/data/site";
+import { companyLine, legalLinks } from "@/components/legal/LegalPage";
+import { type nav, whatsappLink } from "@/data/site";
+import type { LegalInfo } from "@/lib/legal";
 import type { Service, SiteContent, SiteSettings } from "@/lib/content-schema";
 
 export function FinalCTA({ content }: { content: SiteContent["finalCta"] }) {
@@ -37,10 +39,14 @@ export function FinalCTA({ content }: { content: SiteContent["finalCta"] }) {
 }
 
 export default function Footer({
+  navItems,
+  legal,
   settings,
   services,
   content,
 }: {
+  navItems: typeof nav;
+  legal: LegalInfo;
   settings: SiteSettings;
   services: Service[];
   content: SiteContent["footer"];
@@ -73,8 +79,8 @@ export default function Footer({
         </div>
 
         <nav className="footer-col" aria-label="Navegação do rodapé">
-          <h4>Navegação</h4>
-          {nav.map((item) => (
+          <h3 className="footer-title">Navegação</h3>
+          {navItems.map((item) => (
             <a key={item.href} href={item.href}>
               {item.label}
             </a>
@@ -82,7 +88,7 @@ export default function Footer({
         </nav>
 
         <div className="footer-col">
-          <h4>Serviços</h4>
+          <h3 className="footer-title">Serviços</h3>
           {services.map((service) => (
             <a key={service.title} href="#servicos">
               {service.title}
@@ -91,7 +97,7 @@ export default function Footer({
         </div>
 
         <div className="footer-col footer-contact">
-          <h4>Contato</h4>
+          <h3 className="footer-title">Contato</h3>
           {settings.email && (
             <a href={`mailto:${settings.email}`}>
               <Icon name="mail" size={16} /> {settings.email}
@@ -117,6 +123,20 @@ export default function Footer({
         <span>© {new Date().getFullYear()} Gardsoft. Todos os direitos reservados.</span>
         <span>{content.bottomText}</span>
         <a href="#inicio">Voltar ao topo ↑</a>
+      </div>
+
+      <div className="container footer-legal">
+        <span>
+          {companyLine(legal)}
+          {legal.cityState && ` · ${legal.cityState}`}. Marcas e imagens dos cases pertencem aos respectivos clientes.
+        </span>
+        <nav aria-label="Políticas">
+          {legalLinks.map((link) => (
+            <a key={link.href} href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
       </div>
     </footer>
   );

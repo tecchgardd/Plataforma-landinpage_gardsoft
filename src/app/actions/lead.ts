@@ -37,6 +37,9 @@ export async function submitLead(_: LeadFormState, formData: FormData): Promise<
 
   const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
   if (tooMany(ip)) return { ok: false, message: "Muitas tentativas. Aguarde alguns minutos e tente novamente." };
+  // LGPD: sem o aceite da política de privacidade, nada é gravado.
+  if (formData.get("consent") !== "sim")
+    return { ok: false, message: "Para enviar, autorize o uso dos dados conforme a Política de privacidade." };
 
   const field = (k: string) => String(formData.get(k) ?? "");
   const parsed = leadSchema.safeParse({
