@@ -51,17 +51,20 @@ export default function LeadsChart({ perDay, lastDay, monthKey }: { perDay: numb
           <span key={i}>{showX(i + 1) ? i + 1 : ""}</span>
         ))}
       </div>
-      <table className="sr-only">
-        <caption>Leads por dia</caption>
-        <tbody>
-          {perDay.map((n, i) => (
-            <tr key={i}>
-              <th scope="row">{label(i + 1)}</th>
-              <td>{n}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* Tabela não respeita height: 1px; o wrapper é que esconde. */}
+      <div className="sr-only">
+        <table>
+          <caption>Leads por dia</caption>
+          <tbody>
+            {perDay.map((n, i) => (
+              <tr key={i}>
+                <th scope="row">{label(i + 1)}</th>
+                <td>{n}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }
