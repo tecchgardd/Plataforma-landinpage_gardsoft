@@ -3531,3 +3531,30 @@
     grid-column: auto;
   }
 }
+
+/* dashboard: valor em negociação (fora da receita) */
+.adm-pipeline-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin: 16px 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px dashed var(--line-strong);
+  background: var(--bg-soft);
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.adm-pipeline-note strong {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.adm-pipeline-note small {
+  flex-basis: 100%;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.adm-pipeline-note:hover {
+  border-color: var(--blue);
+}
