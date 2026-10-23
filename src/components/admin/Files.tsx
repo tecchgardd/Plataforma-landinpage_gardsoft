@@ -28,7 +28,7 @@ export default function Files({
   suggestions = [],
 }: {
   files: FileRow[];
-  type: "cliente" | "projeto" | "financeiro";
+  type: "cliente" | "projeto" | "financeiro" | "notafiscal";
   upload: (state: FormState, formData: FormData) => Promise<FormState>;
   remove: (id: string) => Promise<void>;
   suggestions?: string[];

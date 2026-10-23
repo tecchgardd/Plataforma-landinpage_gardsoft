@@ -36,9 +36,10 @@ export default async function NewContractPage({ searchParams }: { searchParams: 
               title: project ? `Desenvolvimento — ${project.service ?? project.name}` : "",
               clientId: project?.clientId ?? cliente ?? "",
               projectId: project?.id ?? null,
+              preamble: settings.contract.preamble,
               scope: project?.description ?? "",
               clauses: settings.contract.clauses,
-              deliveryDays: 30,
+              deliveryDays: settings.contract.deliveryDays || null,
               valueCents: project?.valueCents ?? 0,
               paymentPlan: [],
             }}

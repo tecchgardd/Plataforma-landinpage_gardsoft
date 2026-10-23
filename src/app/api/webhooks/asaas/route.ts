@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { logSystem } from "@/lib/activity";
 import { markEntryPaid } from "@/lib/finance/billing";
+import { applyAsaasInvoice } from "@/lib/finance/invoices";
 
 /**
  * Webhook do Asaas. Configure no painel do Asaas:
@@ -79,21 +80,15 @@ export async function POST(request: Request) {
     }
 
     if (body.invoice) {
-      const entry = await prisma.financeEntry.findUnique({ where: { asaasInvoiceId: body.invoice.id } });
-      if (entry) {
-        await prisma.financeEntry.update({
-          where: { id: entry.id },
-          data: {
-            nfStatus: body.invoice.status,
-            nfNumber: body.invoice.number ?? entry.nfNumber,
-            nfPdfUrl: body.invoice.pdfUrl ?? entry.nfPdfUrl,
-            nfXmlUrl: body.invoice.xmlUrl ?? entry.nfXmlUrl,
-          },
-        });
+      const invoice = await prisma.invoice.findUnique({ where: { asaasInvoiceId: body.invoice.id } });
+      if (invoice) {
+        await applyAsaasInvoice(invoice.id, body.invoice);
         if (body.event === "INVOICE_AUTHORIZED")
-          await logSystem("emitiu", "financeiro", `Recebeu a nota fiscal ${body.invoice.number ?? ""} autorizada: ${entry.description}`, entry.id);
+          await logSystem("emitiu", "notafiscal", `Recebeu a nota fiscal ${body.invoice.number ?? ""} autorizada: ${invoice.description}`, invoice.id);
+        if (body.event === "INVOICE_CANCELED")
+          await logSystem("cancelou", "notafiscal", `Nota fiscal ${body.invoice.number ?? invoice.number ?? ""} cancelada: ${invoice.description}`, invoice.id);
         if (body.event === "INVOICE_ERROR")
-          await logSystem("erro", "financeiro", `Recebeu erro na nota fiscal (${body.invoice.statusDescription ?? "sem detalhes"}): ${entry.description}`, entry.id);
+          await logSystem("erro", "notafiscal", `Recebeu erro na nota fiscal (${body.invoice.statusDescription ?? "sem detalhes"}): ${invoice.description}`, invoice.id);
       }
     }
 

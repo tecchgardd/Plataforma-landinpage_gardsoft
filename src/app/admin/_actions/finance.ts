@@ -13,7 +13,7 @@ import { paymentMethods } from "@/lib/admin/options";
 import { firstError, formObject, optionalText, optionalUuid, type FormState } from "@/lib/admin/form";
 import { createAsaasCharge, emailCharge, issueEntryInvoice, markEntryPaid } from "@/lib/finance/billing";
 import { money } from "@/lib/finance/contract";
-import { financeSettingsSchema, saveFinanceSettings } from "@/lib/finance/settings";
+import { applyAsaasInvoice } from "@/lib/finance/invoices";
 import { deletePayment, getInvoice, getPayment, PAID_STATUSES } from "@/lib/integrations/asaas";
 
 const refresh = () => revalidatePath("/admin", "layout");
@@ -188,8 +188,8 @@ export async function emailEntry(id: string, _: FormState): Promise<FormState> {
 export async function invoiceEntry(id: string, _: FormState): Promise<FormState> {
   const user = await requireUser();
   try {
-    const entry = await issueEntryInvoice(id);
-    await logActivity(user, "emitiu", "financeiro", `Solicitou a nota fiscal de ${entry.description}`, id);
+    const invoice = await issueEntryInvoice(id);
+    await logActivity(user, "emitiu", "notafiscal", `Solicitou a nota fiscal de ${invoice.description}`, invoice.id);
   } catch (e) {
     return { error: errorText(e) };
   }
@@ -200,7 +200,7 @@ export async function invoiceEntry(id: string, _: FormState): Promise<FormState>
 /** Atualiza status da cobrança e da nota direto do Asaas (caso algum aviso não tenha chegado). */
 export async function syncEntry(id: string, _: FormState): Promise<FormState> {
   await requireUser();
-  const entry = await prisma.financeEntry.findUnique({ where: { id } });
+  const entry = await prisma.financeEntry.findUnique({ where: { id }, include: { invoice: { select: { id: true, asaasInvoiceId: true } } } });
   if (!entry?.asaasPaymentId) return { error: "Este lançamento não tem cobrança no Asaas." };
   try {
     const payment = await getPayment(entry.asaasPaymentId);
@@ -211,12 +211,8 @@ export async function syncEntry(id: string, _: FormState): Promise<FormState> {
     if (PAID_STATUSES.includes(payment.status) && entry.status !== "pago") {
       await markEntryPaid(id, { paidAmountCents: Math.round(payment.value * 100), source: "Asaas" });
     }
-    if (entry.asaasInvoiceId) {
-      const nf = await getInvoice(entry.asaasInvoiceId);
-      await prisma.financeEntry.update({
-        where: { id },
-        data: { nfStatus: nf.status, nfNumber: nf.number ?? null, nfPdfUrl: nf.pdfUrl ?? null, nfXmlUrl: nf.xmlUrl ?? null },
-      });
+    if (entry.invoice?.asaasInvoiceId) {
+      await applyAsaasInvoice(entry.invoice.id, await getInvoice(entry.invoice.asaasInvoiceId));
     }
   } catch (e) {
     return { error: errorText(e) };
@@ -244,45 +240,3 @@ export async function deleteEntryFile(fileId: string) {
   await prisma.financeFile.deleteMany({ where: { id: fileId } });
   refresh();
 }
-
-/* ---------- configurações ---------- */
-
-export async function saveSettings(_: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
-  const f = formObject(formData);
-  const num = (v: string | undefined) => Number((v ?? "0").replace(",", ".")) || 0;
-  const parsed = financeSettingsSchema.safeParse({
-    company: {
-      legalName: f.legalName ?? "",
-      tradeName: f.tradeName ?? "",
-      document: f.document ?? "",
-      address: f.address ?? "",
-      cityState: f.cityState ?? "",
-      email: f.email ?? "",
-      phone: f.phone ?? "",
-      website: f.website ?? "",
-      representative: f.representative ?? "",
-    },
-    contract: { clauses: f.clauses ?? "", jurisdiction: f.jurisdiction ?? "" },
-    billing: {
-      method: f.billingMethod,
-      finePercent: num(f.finePercent),
-      interestPercent: num(f.interestPercent),
-      createOnSign: f.createOnSign === "on",
-    },
-    invoice: {
-      autoIssue: f.autoIssue === "on",
-      municipalServiceCode: f.municipalServiceCode ?? "",
-      municipalServiceName: f.municipalServiceName ?? "",
-      description: f.invoiceDescription ?? "",
-      issPercent: num(f.issPercent),
-      retainIss: f.retainIss === "on",
-    },
-  });
-  if (!parsed.success) return { error: firstError(parsed.error) };
-  await saveFinanceSettings(parsed.data);
-  await logActivity(user, "editou", "financeiro", "Atualizou as configurações financeiras", null);
-  refresh();
-  return { success: "Configurações salvas." };
-}
-

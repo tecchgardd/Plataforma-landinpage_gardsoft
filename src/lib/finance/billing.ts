@@ -5,6 +5,7 @@ import { logSystem } from "@/lib/activity";
 import { asaasConfigured, createCustomer, createPayment, PAID_STATUSES, scheduleInvoice } from "@/lib/integrations/asaas";
 import { emailConfigured, emailLayout, sendEmail } from "@/lib/integrations/email";
 import { money, paymentPlanSchema } from "./contract";
+import { applyAsaasInvoice } from "./invoices";
 import { getFinanceSettings } from "./settings";
 
 const dateOnly = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
@@ -62,7 +63,7 @@ async function ensureAsaasCustomer(clientId: string) {
 
 /** Gera boleto/Pix no Asaas para uma conta a receber. */
 export async function createAsaasCharge(entryId: string) {
-  if (!asaasConfigured()) throw new Error("Asaas não configurado. Veja Financeiro → Configurações.");
+  if (!asaasConfigured()) throw new Error("Asaas não configurado. Veja Financeiro → Cobrança e integrações.");
   const entry = await prisma.financeEntry.findUniqueOrThrow({ where: { id: entryId } });
   if (entry.type !== "receber") throw new Error("Cobranças são geradas apenas para contas a receber.");
   if (entry.asaasPaymentId) return entry;
@@ -94,7 +95,7 @@ export async function createAsaasCharge(entryId: string) {
 
 /** Envia a cobrança (link da fatura com boleto/Pix) ao e-mail do cliente. */
 export async function emailCharge(entryId: string) {
-  if (!emailConfigured()) throw new Error("Envio de e-mail não configurado. Veja Financeiro → Configurações.");
+  if (!emailConfigured()) throw new Error("Envio de e-mail não configurado. Veja Financeiro → Cobrança e integrações.");
   const entry = await prisma.financeEntry.findUniqueOrThrow({ where: { id: entryId }, include: { client: true } });
   if (!entry.client?.email) throw new Error("O cliente não tem e-mail cadastrado.");
   const link = entry.invoiceUrl ?? entry.bankSlipUrl;
@@ -121,7 +122,7 @@ export async function markEntryPaid(
   entryId: string,
   input: { paidAt?: string; paidAmountCents?: number; method?: string | null; source: string },
 ) {
-  const entry = await prisma.financeEntry.findUniqueOrThrow({ where: { id: entryId }, include: { client: true } });
+  const entry = await prisma.financeEntry.findUniqueOrThrow({ where: { id: entryId }, include: { client: true, invoice: { select: { id: true } } } });
   if (entry.status === "pago") return entry;
   const updated = await prisma.financeEntry.update({
     where: { id: entryId },
@@ -134,8 +135,8 @@ export async function markEntryPaid(
   });
   if (entry.type === "receber") {
     const settings = await getFinanceSettings();
-    if (settings.invoice.autoIssue && entry.asaasPaymentId && !entry.asaasInvoiceId) {
-      await issueEntryInvoice(entryId).catch((e) => logSystem("erro", "financeiro", `Não emitiu a nota fiscal: ${e.message}`, entryId));
+    if (settings.invoice.autoIssue && entry.asaasPaymentId && !entry.invoice) {
+      await issueEntryInvoice(entryId).catch((e) => logSystem("erro", "notafiscal", `Não emitiu a nota fiscal: ${e.message}`, entryId));
     }
     if (emailConfigured() && entry.client?.email) {
       await sendEmail({
@@ -158,17 +159,19 @@ export async function markEntryPaid(
   return updated;
 }
 
-/** Agenda a NFS-e no Asaas para um recebimento. */
+/** Agenda a NFS-e no Asaas para um recebimento e registra a nota em Notas fiscais. */
 export async function issueEntryInvoice(entryId: string) {
   if (!asaasConfigured()) throw new Error("Asaas não configurado.");
-  const entry = await prisma.financeEntry.findUniqueOrThrow({ where: { id: entryId } });
-  if (entry.asaasInvoiceId) return entry;
+  const entry = await prisma.financeEntry.findUniqueOrThrow({ where: { id: entryId }, include: { invoice: true } });
+  if (entry.invoice) return entry.invoice;
   if (!entry.asaasPaymentId) throw new Error("A nota é emitida a partir de uma cobrança gerada no Asaas.");
   const settings = await getFinanceSettings();
-  const invoice = await scheduleInvoice({
+  const description = settings.invoice.description.replaceAll("{descricao}", entry.description);
+  const amountCents = entry.paidAmountCents ?? entry.amountCents;
+  const nf = await scheduleInvoice({
     payment: entry.asaasPaymentId,
-    valueCents: entry.paidAmountCents ?? entry.amountCents,
-    serviceDescription: settings.invoice.description.replaceAll("{descricao}", entry.description),
+    valueCents: amountCents,
+    serviceDescription: description,
     observations: entry.description,
     municipalServiceCode: settings.invoice.municipalServiceCode,
     municipalServiceName: settings.invoice.municipalServiceName,
@@ -176,10 +179,18 @@ export async function issueEntryInvoice(entryId: string) {
     retainIss: settings.invoice.retainIss,
     externalReference: entry.id,
   });
-  return prisma.financeEntry.update({
-    where: { id: entryId },
-    data: { asaasInvoiceId: invoice.id, nfStatus: invoice.status, nfNumber: invoice.number ?? null, nfPdfUrl: invoice.pdfUrl ?? null, nfXmlUrl: invoice.xmlUrl ?? null },
+  const invoice = await prisma.invoice.create({
+    data: {
+      source: "asaas",
+      amountCents,
+      issCents: Math.round((amountCents * settings.invoice.issPercent) / 100),
+      description,
+      clientId: entry.clientId,
+      entryId: entry.id,
+      asaasInvoiceId: nf.id,
+    },
   });
+  return applyAsaasInvoice(invoice.id, nf);
 }
 
 export { PAID_STATUSES };

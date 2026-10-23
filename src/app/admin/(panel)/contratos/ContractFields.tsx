@@ -7,6 +7,7 @@ export type ContractFormData = {
   title: string;
   clientId: string;
   projectId: string | null;
+  preamble: string | null;
   scope: string;
   clauses: string;
   deliveryDays: number | null;
@@ -52,6 +53,17 @@ export default function ContractFields({
         />
       </fieldset>
       <fieldset className="adm-fieldset">
+        <legend>Qualificação das partes</legend>
+        <TextArea
+          label="Preâmbulo"
+          name="preamble"
+          defaultValue={contract.preamble}
+          wide
+          rows={5}
+          hint="Abre o contrato identificando as partes. Os dados vêm do Perfil da empresa e do cadastro do cliente. O modelo padrão fica em Comercial → Configuração CT."
+        />
+      </fieldset>
+      <fieldset className="adm-fieldset">
         <legend>Escopo do projeto</legend>
         <TextArea
           label="O que será entregue"
@@ -74,7 +86,7 @@ export default function ContractFields({
           defaultValue={contract.clauses}
           wide
           rows={16}
-          hint="Variáveis substituídas automaticamente: {contratante}, {contratada}, {valor}, {prazo}, {foro}. O modelo padrão fica em Financeiro → Configurações."
+          hint="Variáveis substituídas automaticamente: {contratante}, {contratada}, {valor}, {prazo}, {foro}. O modelo padrão fica em Comercial → Configuração CT."
         />
       </fieldset>
     </>

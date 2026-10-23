@@ -10,17 +10,38 @@ export const financeSettingsSchema = z.object({
     legalName: str(120),
     tradeName: str(80),
     document: str(20),
+    stateRegistration: str(30),
+    municipalRegistration: str(30),
+    taxRegime: str(60),
+    openingDate: str(10),
+    mainActivity: str(200),
     address: str(200),
+    zipCode: str(10),
     cityState: str(80),
     email: str(120),
     phone: str(30),
     website: str(120),
     representative: str(80),
+    representativeDocument: str(20),
+    representativeRole: str(60),
+    bankName: str(80),
+    bankAgency: str(20),
+    bankAccount: str(30),
+    pixKey: str(120),
   }),
   contract: z.object({
+    /** Qualificação das partes, no topo do contrato. Variáveis: ver contractVariables. */
+    preamble: str(4000),
     /** Cláusulas padrão. Variáveis: {contratante}, {contratada}, {valor}, {prazo}, {foro}. */
     clauses: str(20000),
     jurisdiction: str(80),
+    deliveryDays: z.number().int().min(0).max(999),
+  }),
+  quote: z.object({
+    validityDays: z.number().int().min(1).max(365),
+    intro: str(2000),
+    paymentTerms: str(1000),
+    notes: str(2000),
   }),
   billing: z.object({
     /** BOLETO, PIX ou UNDEFINED (o cliente escolhe na fatura) */
@@ -82,19 +103,55 @@ CLÁUSULA 10 — DA ASSINATURA ELETRÔNICA
 CLÁUSULA 11 — DO FORO
 11.1. Fica eleito o foro da comarca de {foro} para dirimir quaisquer questões oriundas deste contrato.`;
 
+export const defaultPreamble = `CONTRATADA: {contratada}, inscrita no CNPJ sob o nº {cnpj_contratada}, com sede em {endereco_contratada}, neste ato representada por {representante}.
+CONTRATANTE: {contratante}, inscrito(a) no CPF/CNPJ sob o nº {documento_contratante}, com endereço em {endereco_contratante}.
+As partes acima identificadas têm, entre si, justo e acertado o presente Contrato de Prestação de Serviços, que se regerá pelas cláusulas seguintes e pelas condições descritas abaixo.`;
+
+/** Variáveis aceitas no preâmbulo e nas cláusulas do contrato. */
+export const contractVariables = [
+  { key: "{contratada}", label: "Razão social da Gardsoft" },
+  { key: "{cnpj_contratada}", label: "CNPJ da Gardsoft" },
+  { key: "{endereco_contratada}", label: "Endereço da Gardsoft" },
+  { key: "{representante}", label: "Quem assina pela Gardsoft" },
+  { key: "{contratante}", label: "Cliente (empresa ou nome)" },
+  { key: "{documento_contratante}", label: "CPF/CNPJ do cliente" },
+  { key: "{endereco_contratante}", label: "Endereço do cliente" },
+  { key: "{valor}", label: "Valor total" },
+  { key: "{prazo}", label: "Prazo de entrega" },
+  { key: "{foro}", label: "Foro (comarca)" },
+] as const;
+
 export const defaultFinanceSettings: FinanceSettings = {
   company: {
     legalName: "Gardsoft",
     tradeName: "Gardsoft",
     document: "",
+    stateRegistration: "",
+    municipalRegistration: "",
+    taxRegime: "",
+    openingDate: "",
+    mainActivity: "",
     address: "",
+    zipCode: "",
     cityState: "",
     email: "",
     phone: "",
     website: "",
     representative: "",
+    representativeDocument: "",
+    representativeRole: "",
+    bankName: "",
+    bankAgency: "",
+    bankAccount: "",
+    pixKey: "",
   },
-  contract: { clauses: defaultClauses, jurisdiction: "" },
+  contract: { preamble: defaultPreamble, clauses: defaultClauses, jurisdiction: "", deliveryDays: 30 },
+  quote: {
+    validityDays: 15,
+    intro: "Conforme conversamos, segue a proposta para o seu projeto. Os valores abaixo consideram o escopo descrito em cada item.",
+    paymentTerms: "50% na aprovação e 50% na entrega, por boleto ou Pix.",
+    notes: "Itens fora do escopo descrito são orçados à parte. Valores válidos até a data de validade deste orçamento.",
+  },
   billing: { method: "UNDEFINED", finePercent: 2, interestPercent: 1, createOnSign: true },
   invoice: {
     autoIssue: false,
@@ -109,13 +166,18 @@ export const defaultFinanceSettings: FinanceSettings = {
 export async function getFinanceSettings(): Promise<FinanceSettings> {
   const row = await prisma.content.findUnique({ where: { key: KEY } });
   if (!row) return defaultFinanceSettings;
-  // Mescla com o padrão para tolerar campos novos.
-  const merged = { ...defaultFinanceSettings, ...(row.value as object) } as FinanceSettings;
+  // Mescla seção por seção com o padrão: campos novos ganham o valor padrão sem perder o que foi salvo.
+  const saved = (row.value ?? {}) as Partial<Record<keyof FinanceSettings, object>>;
+  const merged = Object.fromEntries(
+    Object.entries(defaultFinanceSettings).map(([section, defaults]) => [section, { ...defaults, ...saved[section as keyof FinanceSettings] }]),
+  );
   const parsed = financeSettingsSchema.safeParse(merged);
   return parsed.success ? parsed.data : defaultFinanceSettings;
 }
 
-export async function saveFinanceSettings(settings: FinanceSettings) {
-  const value = settings as unknown as Prisma.InputJsonValue;
-  await prisma.content.upsert({ where: { key: KEY }, create: { key: KEY, value }, update: { value } });
+/** Salva uma seção das configurações (empresa, contrato, orçamento, cobrança ou nota fiscal). */
+export async function saveSettingsSection<K extends keyof FinanceSettings>(section: K, value: FinanceSettings[K]) {
+  const current = await getFinanceSettings();
+  const next = { ...current, [section]: value } as unknown as Prisma.InputJsonValue;
+  await prisma.content.upsert({ where: { key: KEY }, create: { key: KEY, value: next }, update: { value: next } });
 }

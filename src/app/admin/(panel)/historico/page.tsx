@@ -13,8 +13,11 @@ const entities = [
   { value: "cliente", label: "Clientes" },
   { value: "projeto", label: "Projetos" },
   { value: "campanha", label: "Campanhas" },
+  { value: "orcamento", label: "Orçamentos" },
   { value: "contrato", label: "Contratos" },
   { value: "financeiro", label: "Financeiro" },
+  { value: "notafiscal", label: "Notas fiscais" },
+  { value: "comercial", label: "Configurações comerciais" },
   { value: "conteudo", label: "Conteúdo do site" },
   { value: "usuario", label: "Usuários" },
   { value: "perfil", label: "Perfil" },
@@ -38,6 +41,9 @@ const actionIcon: Record<string, string> = {
   recebeu: "💰",
   "deu baixa": "💰",
   emitiu: "🧾",
+  aprovou: "👍",
+  recusou: "👎",
+  cancelou: "⊘",
   erro: "⚠",
 };
 
@@ -56,8 +62,12 @@ function entityHref(entity: string, id: string | null) {
       return `/admin/usuarios/${id}`;
     case "conteudo":
       return `/admin/conteudo/${id}`;
+    case "orcamento":
+      return `/admin/orcamentos/${id}`;
     case "contrato":
       return `/admin/contratos/${id}`;
+    case "notafiscal":
+      return `/admin/notas-fiscais/${id}`;
     case "financeiro":
       return /^[0-9a-f-]{36}$/.test(id) ? `/admin/financeiro/lancamento/${id}` : null;
     default:

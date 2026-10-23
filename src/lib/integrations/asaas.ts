@@ -147,5 +147,10 @@ export async function getInvoice(id: string) {
   return request<AsaasInvoice>(`/invoices/${id}`);
 }
 
+/** Pede o cancelamento da NFS-e à prefeitura (o resultado chega pelo webhook INVOICE_CANCELED). */
+export async function cancelInvoice(id: string) {
+  return request<AsaasInvoice>(`/invoices/${id}/cancel`, { method: "POST" });
+}
+
 /** Status do Asaas que significam "pago". */
 export const PAID_STATUSES = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"];

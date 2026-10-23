@@ -2,6 +2,7 @@ import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { formatCpfCnpj } from "./document";
 import type { FinanceSettings } from "./settings";
 
 export const installmentSchema = z.object({
@@ -35,6 +36,7 @@ export async function nextContractNumber() {
 export type ContractData = {
   number: string;
   title: string;
+  preamble: string | null;
   scope: string;
   clauses: string;
   valueCents: number;
@@ -58,15 +60,34 @@ export function partyName(client: ContractData["client"]) {
   return client.company ?? client.name;
 }
 
-/** Substitui as variáveis das cláusulas. */
+const joinAddress = (...parts: (string | null | undefined)[]) => parts.filter(Boolean).join(", ");
+
+/** Substitui as variáveis do contrato (preâmbulo e cláusulas). Campo vazio vira "não informado". */
+export function renderTemplate(text: string, data: ContractData, settings: FinanceSettings) {
+  const c = settings.company;
+  const client = data.client;
+  const or = (v: string | null | undefined) => v || "não informado";
+  const vars: Record<string, string> = {
+    "{contratada}": c.legalName || "Gardsoft",
+    "{cnpj_contratada}": or(formatCpfCnpj(c.document)),
+    "{endereco_contratada}": or(joinAddress(c.address, c.cityState, c.zipCode && `CEP ${c.zipCode}`)),
+    "{representante}": or(joinAddress(c.representative, c.representativeRole, c.representativeDocument && `CPF ${c.representativeDocument}`)),
+    "{contratante}": partyName(client),
+    "{documento_contratante}": or(formatCpfCnpj(client.document)),
+    "{endereco_contratante}": or(joinAddress(client.address, client.city && `${client.city}${client.state ? `/${client.state}` : ""}`, client.zipCode && `CEP ${client.zipCode}`)),
+    "{valor}": money(data.valueCents),
+    "{prazo}": data.deliveryDays ? `${data.deliveryDays} dias` : "a combinar entre as partes",
+    "{foro}": settings.contract.jurisdiction || c.cityState || "domicílio da CONTRATADA",
+  };
+  return Object.entries(vars).reduce((out, [key, value]) => out.replaceAll(key, value), text);
+}
+
 export function renderClauses(data: ContractData, settings: FinanceSettings) {
-  const prazo = data.deliveryDays ? `${data.deliveryDays} dias` : "a combinar entre as partes";
-  return data.clauses
-    .replaceAll("{contratante}", partyName(data.client))
-    .replaceAll("{contratada}", settings.company.legalName || "Gardsoft")
-    .replaceAll("{valor}", money(data.valueCents))
-    .replaceAll("{prazo}", prazo)
-    .replaceAll("{foro}", settings.contract.jurisdiction || settings.company.cityState || "domicílio da CONTRATADA");
+  return renderTemplate(data.clauses, data, settings);
+}
+
+export function renderPreamble(data: ContractData, settings: FinanceSettings) {
+  return data.preamble ? renderTemplate(data.preamble, data, settings) : "";
 }
 
 /** Texto canônico do contrato: é o que o hash (código de verificação) protege. */
@@ -76,6 +97,8 @@ export function canonicalText(data: ContractData, settings: FinanceSettings) {
     title: data.title,
     contratada: settings.company,
     contratante: data.client,
+    // Só entra quando existe, para não mudar o texto dos contratos anteriores ao preâmbulo.
+    ...(data.preamble ? { preamble: renderPreamble(data, settings) } : {}),
     scope: data.scope,
     valueCents: data.valueCents,
     paymentPlan: data.paymentPlan,
@@ -114,6 +137,7 @@ export async function loadContract(where: { id: string } | { token: string }) {
   const data: ContractData = {
     number: contract.number,
     title: contract.title,
+    preamble: contract.preamble,
     scope: contract.scope,
     clauses: contract.clauses,
     valueCents: contract.valueCents,

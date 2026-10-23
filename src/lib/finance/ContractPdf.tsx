@@ -1,13 +1,8 @@
 import "server-only";
-import { Document, Image, Page, Path, StyleSheet, Svg, Text, View, renderToBuffer } from "@react-pdf/renderer";
+import { Document, Image, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
 import type { FinanceSettings } from "./settings";
-import { money, partyName, renderClauses, verificationCode, type ContractData } from "./contract";
-
-const BLUE = "#1A5CFF";
-const INK = "#0A1430";
-const MUTED = "#6A7593";
-const LINE = "#E3E9F5";
-const SOFT = "#F5F8FF";
+import { money, partyName, renderClauses, renderPreamble, verificationCode, type ContractData } from "./contract";
+import { BLUE, fmtDate, fmtDateTime, INK, LINE, MUTED, Shield, SOFT } from "./pdf-brand";
 
 const s = StyleSheet.create({
   // A faixa azul é fixa no topo de toda página; o conteúdo começa abaixo dela.
@@ -55,18 +50,6 @@ const s = StyleSheet.create({
   footerLeft: { position: "absolute", bottom: 24, left: 40, fontSize: 7.5, color: MUTED },
 });
 
-function Shield({ size = 22, color = "#FFFFFF" }: { size?: number; color?: string }) {
-  return (
-    <Svg width={size} height={size * 1.12} viewBox="0 0 100 112">
-      <Path d="M86 28 50 12 14 28v28c0 23 15 39 36 47 21-8 36-24 36-47V46H47v10l13 7" stroke={color} strokeWidth={13} fill="none" />
-    </Svg>
-  );
-}
-
-const fmtDate = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("pt-BR");
-const fmtDateTime = (d: Date) =>
-  d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-
 export type Signature = {
   signedAt: Date;
   name: string;
@@ -95,6 +78,7 @@ function ContractDocument({
   const c = settings.company;
   const client = data.client;
   const clauses = renderClauses(data, settings).split(/\n+/).filter(Boolean);
+  const preamble = renderPreamble(data, settings).split(/\n+/).filter(Boolean);
   const code = signature ? verificationCode(signature.hash) : "Aguardando assinatura";
 
   return (
@@ -145,6 +129,16 @@ function ContractDocument({
               {client.email || client.phone ? <Text style={s.muted}>{[client.email, client.phone].filter(Boolean).join(" · ")}</Text> : null}
             </View>
           </View>
+
+          {preamble.length > 0 ? (
+            <View style={{ marginTop: 14 }}>
+              {preamble.map((p, i) => (
+                <Text key={i} style={s.clause}>
+                  {p}
+                </Text>
+              ))}
+            </View>
+          ) : null}
 
           <Text style={s.h2}>Escopo do projeto</Text>
           <View style={s.box}>

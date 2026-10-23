@@ -6,7 +6,7 @@ import ActionButton from "@/components/admin/ActionButton";
 import { Input, Select } from "@/components/admin/Fields";
 import Files from "@/components/admin/Files";
 import PageHeader from "@/components/admin/PageHeader";
-import { EntryBadge } from "@/components/admin/Badges";
+import { EntryBadge, InvoiceBadge } from "@/components/admin/Badges";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { money, moneyInput, shortDate } from "@/lib/admin/format";
@@ -30,15 +30,6 @@ import EntryFields from "../../EntryFields";
 
 export const metadata = { title: "Lançamento" };
 
-const nfLabel: Record<string, string> = {
-  SCHEDULED: "Agendada",
-  AUTHORIZED: "Autorizada",
-  PROCESSING_CANCELLATION: "Cancelando",
-  CANCELED: "Cancelada",
-  CANCELLATION_DENIED: "Cancelamento negado",
-  ERROR: "Erro na emissão",
-};
-
 export default async function EntryPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ erro?: string }> }) {
   await requireUser();
   const [{ id }, { erro }] = await Promise.all([params, searchParams]);
@@ -50,6 +41,7 @@ export default async function EntryPage({ params, searchParams }: { params: Prom
         client: true,
         project: { select: { id: true, name: true } },
         contract: { select: { id: true, number: true } },
+        invoice: { select: { id: true, number: true, status: true, pdfUrl: true, xmlUrl: true } },
         files: { select: { id: true, name: true, label: true, size: true, mime: true, createdAt: true }, orderBy: { createdAt: "desc" } },
       },
     }),
@@ -103,7 +95,7 @@ export default async function EntryPage({ params, searchParams }: { params: Prom
               {!asaas ? (
                 <p className="adm-card-sub">
                   Asaas não configurado. Gere o boleto no seu banco e anexe abaixo, ou configure em{" "}
-                  <Link href="/admin/financeiro/configuracoes">Financeiro → Configurações</Link>.
+                  <Link href="/admin/financeiro/configuracoes">Financeiro → Cobrança e integrações</Link>.
                 </p>
               ) : entry.asaasPaymentId ? (
                 <>
@@ -155,33 +147,43 @@ export default async function EntryPage({ params, searchParams }: { params: Prom
           {isIncome && entry.status === "pago" && (
             <section className="adm-card">
               <h2>Nota fiscal</h2>
-              {entry.asaasInvoiceId ? (
+              {entry.invoice ? (
                 <>
                   <p className="adm-card-sub">
-                    Situação: <strong>{nfLabel[entry.nfStatus ?? ""] ?? entry.nfStatus}</strong>
-                    {entry.nfNumber && ` · Nº ${entry.nfNumber}`}
+                    <InvoiceBadge status={entry.invoice.status} />
+                    {entry.invoice.number && ` · Nº ${entry.invoice.number}`}
                   </p>
                   <div className="adm-btn-row">
-                    {entry.nfPdfUrl && (
-                      <a href={entry.nfPdfUrl} target="_blank" rel="noopener noreferrer" className="adm-btn ghost">
+                    <Link href={`/admin/notas-fiscais/${entry.invoice.id}`} className="adm-btn ghost">
+                      Abrir nota
+                    </Link>
+                    {entry.invoice.pdfUrl && (
+                      <a href={entry.invoice.pdfUrl} target="_blank" rel="noopener noreferrer" className="adm-btn ghost">
                         PDF da nota ↗
                       </a>
                     )}
-                    {entry.nfXmlUrl && (
-                      <a href={entry.nfXmlUrl} target="_blank" rel="noopener noreferrer" className="adm-btn ghost">
+                    {entry.invoice.xmlUrl && (
+                      <a href={entry.invoice.xmlUrl} target="_blank" rel="noopener noreferrer" className="adm-btn ghost">
                         XML ↗
                       </a>
                     )}
                   </div>
                 </>
-              ) : entry.asaasPaymentId && asaas ? (
-                <ActionButton action={invoiceEntry.bind(null, entry.id)} pendingText="Solicitando...">
-                  Emitir nota fiscal (NFS-e)
-                </ActionButton>
               ) : (
-                <p className="adm-card-sub">
-                  A emissão automática usa a cobrança do Asaas. Para pagamentos manuais, emita no portal da prefeitura e anexe o PDF/XML abaixo como “Nota fiscal”.
-                </p>
+                <>
+                  {entry.asaasPaymentId && asaas ? (
+                    <ActionButton action={invoiceEntry.bind(null, entry.id)} pendingText="Solicitando...">
+                      Emitir nota fiscal (NFS-e)
+                    </ActionButton>
+                  ) : (
+                    <p className="adm-card-sub">
+                      A emissão automática usa a cobrança do Asaas. Se você emitiu a nota no portal da prefeitura, registre-a com o PDF e o XML.
+                    </p>
+                  )}
+                  <Link href={`/admin/notas-fiscais/nova?lancamento=${entry.id}`} className="adm-btn ghost">
+                    Registrar nota emitida fora
+                  </Link>
+                </>
               )}
             </section>
           )}

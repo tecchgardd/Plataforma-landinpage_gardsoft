@@ -31,6 +31,7 @@ model User {
   sessions        Session[]
   accounts        Account[]
   contracts       Contract[]
+  quotes          Quote[]
   leads           Lead[]        @relation("LeadOwner")
   clients         Client[]      @relation("ClientOwner")
   projects        Project[]     @relation("ProjectOwner")
@@ -173,6 +174,8 @@ model Client {
   leads             Lead[]
   projects          Project[]
   files             ClientFile[]
+  quotes            Quote[]
+  invoices          Invoice[]
 
   @@map("clients")
 }
@@ -221,6 +224,7 @@ model Lead {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
   projects    Project[]
+  quotes      Quote[]
 
   @@index([status])
   @@index([campaignId])
@@ -261,6 +265,7 @@ model Project {
   files       ProjectFile[]
   contracts   Contract[]
   entries     FinanceEntry[]
+  quotes      Quote[]
 
   @@index([clientId])
   @@index([stage, position])
@@ -348,6 +353,8 @@ model Contract {
   project         Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
   /// rascunho, enviado, visualizado, assinado, cancelado
   status          String         @default("rascunho")
+  /// Qualificação das partes (copiada da Configuração CT na criação)
+  preamble        String?
   scope           String
   clauses         String
   valueCents      Int            @map("value_cents")
@@ -373,6 +380,7 @@ model Contract {
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @default(now()) @updatedAt @map("updated_at")
   entries         FinanceEntry[]
+  quote           Quote?
 
   @@index([clientId])
   @@index([status])
@@ -411,16 +419,12 @@ model FinanceEntry {
   asaasStatus       String?       @map("asaas_status")
   invoiceUrl        String?       @map("invoice_url")
   bankSlipUrl       String?       @map("bank_slip_url")
-  // Asaas — nota fiscal
-  asaasInvoiceId    String?       @unique @map("asaas_invoice_id")
-  nfStatus          String?       @map("nf_status")
-  nfNumber          String?       @map("nf_number")
-  nfPdfUrl          String?       @map("nf_pdf_url")
-  nfXmlUrl          String?       @map("nf_xml_url")
   notes             String?
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @default(now()) @updatedAt @map("updated_at")
   files             FinanceFile[]
+  /// Nota fiscal do recebimento (emitida pelo Asaas ou lançada à mão)
+  invoice           Invoice?
 
   @@index([type, status, dueDate])
   @@index([clientId])
@@ -444,6 +448,103 @@ model FinanceFile {
 
   @@index([entryId])
   @@map("finance_files")
+}
+
+/// Orçamento enviado ao cliente (ou ao lead), aprovado pelo link público e convertido em contrato.
+model Quote {
+  id            String    @id @default(uuid()) @db.Uuid
+  /// Número sequencial legível, ex.: ORC-2026-0001
+  number        String    @unique
+  title         String
+  clientId      String?   @map("client_id") @db.Uuid
+  client        Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  leadId        String?   @map("lead_id") @db.Uuid
+  lead          Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  projectId     String?   @map("project_id") @db.Uuid
+  project       Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  /// rascunho, enviado, visualizado, aprovado, recusado, cancelado (vencido é calculado pela validade)
+  status        String    @default("rascunho")
+  /// Apresentação do orçamento (contexto, objetivo)
+  intro         String?
+  /// Itens: [{ description, details, quantity, unitCents }]
+  items         Json
+  discountCents Int       @default(0) @map("discount_cents")
+  totalCents    Int       @map("total_cents")
+  validUntil    DateTime? @map("valid_until") @db.Date
+  deliveryDays  Int?      @map("delivery_days")
+  paymentTerms  String?   @map("payment_terms")
+  notes         String?
+  /// Token secreto do link de aprovação
+  token         String    @unique
+  sentAt        DateTime? @map("sent_at")
+  viewedAt      DateTime? @map("viewed_at")
+  decidedAt     DateTime? @map("decided_at")
+  decisionName  String?   @map("decision_name")
+  /// Motivo da recusa ou observação da aprovação
+  decisionNote  String?   @map("decision_note")
+  decisionIp    String?   @map("decision_ip")
+  contractId    String?   @unique @map("contract_id") @db.Uuid
+  contract      Contract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  createdById   String?   @map("created_by_id")
+  createdBy     User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([clientId])
+  @@map("quotes")
+}
+
+/// Nota fiscal de serviço (NFS-e): emitida pelo Asaas ou lançada à mão (emitida no portal da prefeitura).
+model Invoice {
+  id               String        @id @default(uuid()) @db.Uuid
+  number           String?
+  series           String?
+  /// pendente | emitida | cancelada | erro
+  status           String        @default("pendente")
+  /// asaas | manual
+  source           String        @default("manual")
+  issueDate        DateTime?     @map("issue_date") @db.Date
+  amountCents      Int           @map("amount_cents")
+  issCents         Int?          @map("iss_cents")
+  description      String
+  /// Código de verificação da prefeitura
+  verificationCode String?       @map("verification_code")
+  clientId         String?       @map("client_id") @db.Uuid
+  client           Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  entryId          String?       @unique @map("entry_id") @db.Uuid
+  entry            FinanceEntry? @relation(fields: [entryId], references: [id], onDelete: SetNull)
+  asaasInvoiceId   String?       @unique @map("asaas_invoice_id")
+  asaasStatus      String?       @map("asaas_status")
+  pdfUrl           String?       @map("pdf_url")
+  xmlUrl           String?       @map("xml_url")
+  errorMessage     String?       @map("error_message")
+  cancelledAt      DateTime?     @map("cancelled_at")
+  cancelReason     String?       @map("cancel_reason")
+  notes            String?
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @default(now()) @updatedAt @map("updated_at")
+  files            InvoiceFile[]
+
+  @@index([status, issueDate])
+  @@index([clientId])
+  @@map("invoices")
+}
+
+/// PDF e XML de notas lançadas à mão.
+model InvoiceFile {
+  id        String   @id @default(uuid()) @db.Uuid
+  invoiceId String   @map("invoice_id") @db.Uuid
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  name      String
+  label     String?
+  mime      String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([invoiceId])
+  @@map("invoice_files")
 }
 
 /// Eventos de webhook já processados (evita processar o mesmo aviso duas vezes).

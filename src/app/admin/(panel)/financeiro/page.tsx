@@ -76,7 +76,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
     <>
       <PageHeader
         title="Financeiro"
-        subtitle="Recebimentos, pagamentos, contratos e cobranças em um só lugar."
+        subtitle="Recebimentos, pagamentos e o resultado do mês."
         actions={
           <>
             <nav className="adm-month" aria-label="Mês">
@@ -95,19 +95,6 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
           </>
         }
       />
-
-      <nav className="adm-fin-nav" aria-label="Módulos financeiros">
-        <Link href="/admin/financeiro/receber">Contas a receber</Link>
-        <Link href="/admin/financeiro/pagar">Contas a pagar</Link>
-        <Link href="/admin/contratos">Contratos</Link>
-        <Link href="/admin/financeiro/configuracoes">Configurações</Link>
-        <Link href="/admin/financeiro/lancamento/novo?tipo=receber" className="adm-btn small">
-          + Receita
-        </Link>
-        <Link href="/admin/financeiro/lancamento/novo?tipo=pagar" className="adm-btn ghost small">
-          + Despesa
-        </Link>
-      </nav>
 
       <section className="adm-lead-kpis" aria-label="Resumo do mês">
         <div className="adm-kpi kpi-fechado">
@@ -196,7 +183,10 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
               ))}
             </ul>
           )}
-          <h3 className="adm-h3">Integrações</h3>
+          <div className="adm-card-head">
+            <h3 className="adm-h3">Integrações</h3>
+            <Link href="/admin/financeiro/configuracoes">Configurar →</Link>
+          </div>
           <ul className="adm-integrations">
             <li className={asaasConfigured() ? "ok" : ""}>
               <strong>Asaas</strong> {asaasConfigured() ? `conectado (${asaasEnvironment() === "production" ? "produção" : "sandbox de testes"})` : "não configurado"}

@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 /**
- * Download dos documentos de clientes e projetos.
+ * Download dos documentos de clientes, projetos, lançamentos e notas fiscais.
  * Diferente das imagens do site, exige sessão: são documentos internos.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ tipo: string; id: string }> }) {
@@ -21,7 +21,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ tipo
         ? await prisma.projectFile.findUnique({ where: { id }, select })
         : tipo === "financeiro"
           ? await prisma.financeFile.findUnique({ where: { id }, select })
-          : null;
+          : tipo === "notafiscal"
+            ? await prisma.invoiceFile.findUnique({ where: { id }, select })
+            : null;
   if (!file) return new Response("Not found", { status: 404 });
 
   // PDF e imagens abrem no navegador; o resto baixa.

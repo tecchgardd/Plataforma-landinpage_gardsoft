@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Logo from "@/components/brand/Logo";
 import { prisma } from "@/lib/prisma";
 import { logSystem } from "@/lib/activity";
-import { loadContract, money, partyName, renderClauses, verificationCode } from "@/lib/finance/contract";
+import { loadContract, money, partyName, renderClauses, renderPreamble, verificationCode } from "@/lib/finance/contract";
 import { getFinanceSettings } from "@/lib/finance/settings";
 import { formatCpfCnpj } from "@/lib/finance/document";
 import SignForm from "./SignForm";
@@ -32,6 +32,7 @@ export default async function ContractSignPage({ params }: { params: Promise<{ t
   const settings = await getFinanceSettings();
   const company = settings.company;
   const clauses = renderClauses(data, settings).split(/\n+/).filter(Boolean);
+  const preamble = renderPreamble(data, settings).split(/\n+/).filter(Boolean);
   const dateOnly = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("pt-BR");
 
   return (
@@ -114,6 +115,13 @@ export default async function ContractSignPage({ params }: { params: Promise<{ t
                   )}
                 </div>
               </div>
+              {preamble.length > 0 && (
+                <div className="ct-clauses">
+                  {preamble.map((line, i) => (
+                    <p key={i}>{line}</p>
+                  ))}
+                </div>
+              )}
               <h3>Escopo do projeto</h3>
               <p className="ct-pre">{data.scope}</p>
               <h3>Valor e plano de pagamento</h3>

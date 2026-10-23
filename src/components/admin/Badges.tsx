@@ -1,9 +1,11 @@
 import {
   campaignStatuses,
   contractStatuses,
+  invoiceStatuses,
   labelOf,
   leadStatuses,
   projectStages,
+  quoteStatuses,
   temperatures,
 } from "@/lib/admin/options";
 
@@ -45,4 +47,21 @@ export function EntryBadge({ status, dueDate }: { status: string; dueDate: Date 
   const key = overdue ? "vencido" : status;
   const label = { pago: "Pago", pendente: "Pendente", vencido: "Vencido", cancelado: "Cancelado" }[key] ?? key;
   return <span className={`adm-badge fin-${key}`}>{label}</span>;
+}
+
+/** Situação do orçamento; enviado com a validade passada aparece como vencido. */
+export function QuoteBadge({ status, validUntil }: { status: string; validUntil?: Date | null }) {
+  const today = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+  const expired = (status === "enviado" || status === "visualizado") && validUntil && validUntil.toISOString().slice(0, 10) < today;
+  if (expired) return <span className="adm-badge q-vencido">Vencido</span>;
+  return <span className={`adm-badge q-${status}`}>{labelOf(quoteStatuses, status)}</span>;
+}
+
+export function InvoiceBadge({ status, number }: { status: string; number?: string | null }) {
+  return (
+    <span className={`adm-badge nf-${status}`}>
+      {number ? `NF ${number} · ` : ""}
+      {labelOf(invoiceStatuses, status)}
+    </span>
+  );
 }

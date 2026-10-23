@@ -61,9 +61,14 @@
 }
 .adm-sidebar nav {
   display: grid;
+  align-content: start;
   gap: 2px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
-.adm-sidebar nav a {
+.adm-sidebar nav a,
+.adm-nav-toggle {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -73,7 +78,8 @@
   color: var(--ink-2);
   transition: background 0.2s, color 0.2s;
 }
-.adm-sidebar nav a:hover {
+.adm-sidebar nav a:hover,
+.adm-nav-toggle:hover {
   background: var(--bg-soft);
   color: var(--blue);
 }
@@ -2530,38 +2536,8 @@
   background: #fee4e2;
   color: #b42318;
 }
-.nf-AUTHORIZED {
-  background: var(--ok-bg);
-  color: var(--ok);
-}
-.nf-ERROR {
-  background: #fee4e2;
-  color: #b42318;
-}
 .neg {
   color: var(--err) !important;
-}
-.adm-fin-nav {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-.adm-fin-nav > a:not(.adm-btn) {
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ink-2);
-}
-.adm-fin-nav > a:not(.adm-btn):hover {
-  border-color: var(--blue);
-  color: var(--blue);
-}
-.adm-fin-nav .adm-btn:first-of-type {
-  margin-left: auto;
 }
 .adm-inline-bar {
   display: grid;
@@ -2737,7 +2713,275 @@
   .adm-plan .adm-costs-row input:first-child {
     grid-column: 1 / -1;
   }
-  .adm-fin-nav .adm-btn:first-of-type {
-    margin-left: 0;
+}
+
+/* ---------- Menu: grupos (Comercial › Financeiro) ---------- */
+.adm-nav-toggle {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.adm-nav-group.has-active > .adm-nav-toggle {
+  color: var(--blue);
+}
+.adm-nav-caret {
+  margin-left: auto;
+  font-size: 12px;
+  transition: transform 0.2s var(--ease);
+}
+.adm-nav-toggle[aria-expanded="false"] .adm-nav-caret {
+  transform: rotate(-90deg);
+}
+.adm-nav-children {
+  display: grid;
+  gap: 2px;
+  margin: 2px 0 4px 20px;
+  padding-left: 8px;
+  border-left: 1px solid var(--line);
+}
+.adm-sidebar .adm-nav-children a,
+.adm-nav-children .adm-nav-toggle {
+  padding: 8px 10px;
+  font-size: 14px;
+}
+.adm-nav-group.depth-1 .adm-nav-children {
+  margin-left: 18px;
+}
+.adm-nav-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.45;
+}
+.adm-sidebar nav a.active .adm-nav-dot {
+  opacity: 1;
+}
+
+/* ---------- Orçamentos ---------- */
+.q-rascunho {
+  background: #f2f4f7;
+  color: #475467;
+}
+.q-enviado {
+  background: #e0efff;
+  color: #1849a9;
+}
+.q-visualizado {
+  background: #f4ebff;
+  color: #6941c6;
+}
+.q-aprovado {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.q-recusado,
+.q-vencido {
+  background: #fee4e2;
+  color: #b42318;
+}
+.q-cancelado {
+  background: #f2f4f7;
+  color: #667085;
+  text-decoration: line-through;
+}
+.adm-kpis-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.adm-qitems {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+}
+.adm-qitem {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 80px 140px 120px auto;
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg-soft);
+}
+.adm-qitem-n {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-top: 8px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--blue);
+}
+.adm-qitem-main {
+  display: grid;
+  gap: 6px;
+}
+.adm-qitem-num,
+.adm-qitem-total {
+  display: grid;
+  gap: 4px;
+}
+.adm-qitem-num span,
+.adm-qitem-total span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.adm-qitem-total strong {
+  padding-top: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.adm-qitem-actions {
+  display: flex;
+  gap: 4px;
+  padding-top: 4px;
+}
+.adm-qitems-foot {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.adm-qitems-sum {
+  display: grid;
+  grid-template-columns: auto 160px;
+  align-items: center;
+  gap: 6px 16px;
+  margin: 0;
+  font-size: 14px;
+}
+.adm-qitems-sum dt {
+  color: var(--muted);
+  text-align: right;
+}
+.adm-qitems-sum dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.adm-qitems-sum input {
+  text-align: right;
+}
+.adm-qitems-sum .total {
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 700;
+}
+.adm-qitems-sum dd.total {
+  font-family: var(--font-display), sans-serif;
+  font-size: 20px;
+}
+
+/* ---------- Notas fiscais ---------- */
+.nf-emitida {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.nf-pendente {
+  background: #fef0c7;
+  color: #93370d;
+}
+.nf-erro {
+  background: #fee4e2;
+  color: #b42318;
+}
+.nf-cancelada {
+  background: #f2f4f7;
+  color: #667085;
+  text-decoration: line-through;
+}
+
+/* ---------- Comercial: configurações e relatórios ---------- */
+.adm-party-preview {
+  display: grid;
+  gap: 2px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.adm-party-preview span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+.adm-party-preview small {
+  color: var(--ink-2);
+}
+.adm-vars {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.adm-vars div {
+  display: grid;
+  gap: 1px;
+}
+.adm-vars dt {
+  color: var(--blue);
+}
+.adm-pre {
+  max-height: 260px;
+  overflow: auto;
+  margin: 10px 0 0;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--bg-soft);
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+.adm-bar.expense {
+  background: var(--err);
+}
+.adm-table tr.adm-total-row td {
+  font-weight: 700;
+  border-top: 1px solid var(--line-strong);
+}
+@media (max-width: 1200px) {
+  .adm-qitem {
+    grid-template-columns: 28px minmax(0, 1fr) 80px 130px;
+  }
+  .adm-qitem-total,
+  .adm-qitem-actions {
+    grid-column: 2 / -1;
+  }
+  .adm-qitem-total {
+    grid-template-columns: auto 1fr;
+    align-items: baseline;
+  }
+  .adm-qitem-total strong {
+    padding-top: 0;
+  }
+}
+@media (max-width: 600px) {
+  .adm-kpis-3 {
+    grid-template-columns: 1fr;
+  }
+  .adm-qitem {
+    grid-template-columns: 1fr 1fr;
+  }
+  .adm-qitem-n {
+    display: none;
+  }
+  .adm-qitem-main,
+  .adm-qitem-total,
+  .adm-qitem-actions {
+    grid-column: 1 / -1;
+  }
+  .adm-qitems-sum {
+    grid-template-columns: auto 1fr;
+    width: 100%;
   }
 }

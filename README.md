@@ -10,8 +10,13 @@ Landing page da Gardsoft e portal de administração em Next.js 16 (App Router +
   - **Projetos:** quadro estilo Trello (arrastar e soltar) com modal de escopo, links (GitHub, preview, design, docs), checklist, atualizações e documentação.
   - **Campanhas:** vários canais, investimentos detalhados por tipo e link rastreável (UTM) por canal.
   - **Conteúdo do site:** todas as seções da landing, do topo ao rodapé, escolhidas por menu suspenso.
-  - **Contratos:** gerados a partir do cliente e do projeto, PDF com a identidade da Gardsoft, link de assinatura eletrônica (desenho da assinatura, CPF/CNPJ validado, IP, data e código de verificação SHA-256).
-  - **Financeiro:** contas a receber e a pagar (parcelas e recorrência), baixa com comprovante, painel do mês, boleto/Pix e nota fiscal pelo Asaas, e-mails pelo Resend.
+  - **Comercial** (grupo no menu):
+    - **Orçamentos:** itens com descrição, quantidade e valor, desconto, validade e condições. PDF e link público para o cliente aprovar ou recusar; aprovado, vira contrato com um clique.
+    - **Contratos:** gerados a partir do cliente, do projeto ou do orçamento, PDF com a identidade da Gardsoft, link de assinatura eletrônica (desenho da assinatura, CPF/CNPJ validado, IP, data e código de verificação SHA-256).
+    - **Financeiro:** visão geral do mês, contas a receber e a pagar (parcelas e recorrência), baixa com comprovante, receitas e despesas por categoria, boleto/Pix pelo Asaas e e-mails pelo Resend.
+    - **Notas fiscais:** NFS-e emitidas pelo Asaas e notas emitidas no portal da prefeitura (com PDF e XML), com filtros de emitidas, pendentes, canceladas e com erro.
+    - **Perfil da empresa:** razão social, CNPJ, inscrições, endereço, representante legal e dados bancários.
+    - **Configuração CT:** preâmbulo (qualificação das partes), cláusulas e foro do contrato, e os padrões do orçamento.
   - **Perfil** com foto, **Usuários** (criar, editar, redefinir senha, excluir) e **Histórico** de tudo o que é feito no portal.
 
 Stack: Prisma 7 + Postgres (Neon), Better Auth (usuário/e-mail e senha), Zod.
@@ -62,9 +67,9 @@ Sem chaves, o módulo funciona em modo manual: o contrato gera um link para envi
 | `ASAAS_WEBHOOK_TOKEN` | Token do webhook. No Asaas, cadastre `https://SEU-DOMINIO/api/webhooks/asaas` com este mesmo token, para eventos de cobranças e notas fiscais. |
 | `RESEND_API_KEY`, `MAIL_FROM` | Envio de contratos, cobranças e confirmações. O domínio do remetente precisa estar verificado no Resend. |
 
-O passo a passo também aparece no portal, em **Financeiro → Configurações**. Lá ficam ainda os dados da empresa no contrato, o modelo de cláusulas (revise com um advogado), multa e juros, e o código de serviço/ISS da nota (confirme com o contador).
+O passo a passo também aparece no portal, em **Financeiro → Cobrança e integrações** (forma de cobrança, multa e juros). Os dados da empresa ficam em **Perfil da empresa**, o modelo de contrato em **Configuração CT** (revise as cláusulas com um advogado) e o código de serviço/ISS em **Notas fiscais → Configurações** (confirme com o contador).
 
-Fluxo: **Cliente → Projeto → Gerar contrato → Enviar → Cliente assina pelo link → Parcelas lançadas (e cobranças geradas no Asaas, se configurado) → Pagamento confirmado pelo webhook ou baixa manual → Nota fiscal.**
+Fluxo: **Lead ou cliente → Orçamento → Cliente aprova pelo link → Gerar contrato → Enviar → Cliente assina pelo link → Parcelas lançadas (e cobranças geradas no Asaas, se configurado) → Pagamento confirmado pelo webhook ou baixa manual → Nota fiscal.**
 
 ## Publicar (Vercel + Neon)
 
@@ -91,8 +96,9 @@ Fluxo: **Cliente → Projeto → Gerar contrato → Enviar → Cliente assina pe
 | `src/lib/activity.ts` | Registro do histórico (`logActivity`) e lista da equipe |
 | `src/lib/files.ts` | Validação dos anexos (tipo conferido pelo conteúdo, até 10 MB) |
 | `src/app/api/arquivos/[tipo]/[id]` | Download de anexos de clientes, projetos e financeiro (exige login) |
-| `src/lib/finance/` | Contrato (numeração, hash, PDF), cobranças e configurações financeiras |
+| `src/lib/finance/` | Orçamento e contrato (numeração, hash, PDF), notas fiscais, cobranças e configurações comerciais |
 | `src/lib/integrations/` | Clientes do Asaas e do Resend |
+| `src/app/orcamento/[token]` | Página pública de aprovação do orçamento |
 | `src/app/contrato/[token]` | Página pública de assinatura do contrato |
 | `src/app/api/webhooks/asaas` | Webhook do Asaas (baixa automática e nota fiscal) |
 

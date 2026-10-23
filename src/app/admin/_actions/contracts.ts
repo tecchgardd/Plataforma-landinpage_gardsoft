@@ -6,7 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { logActivity } from "@/lib/activity";
-import { firstError, formObject, optionalUuid, type FormState } from "@/lib/admin/form";
+import { firstError, formObject, optionalText, optionalUuid, type FormState } from "@/lib/admin/form";
 import { money, newToken, nextContractNumber, paymentPlanSchema, signUrl } from "@/lib/finance/contract";
 import { contractPdf } from "@/lib/finance/contract-pdf";
 import { createAsaasCharge, createEntriesFromContract, emailCharge } from "@/lib/finance/billing";
@@ -17,6 +17,7 @@ const contractSchema = z.object({
   title: z.string().trim().min(3, "Informe o título do contrato.").max(140),
   clientId: z.uuid("Escolha o cliente."),
   projectId: optionalUuid,
+  preamble: optionalText(4000),
   scope: z.string().trim().min(10, "Descreva o escopo do projeto.").max(20000),
   clauses: z.string().trim().min(10, "As cláusulas não podem ficar vazias.").max(30000),
   deliveryDays: z

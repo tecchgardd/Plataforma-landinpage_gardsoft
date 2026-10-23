@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import PageHeader, { Empty } from "@/components/admin/PageHeader";
-import { EntryBadge } from "@/components/admin/Badges";
+import { EntryBadge, InvoiceBadge } from "@/components/admin/Badges";
 import { prisma, type Prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { money, shortDate } from "@/lib/admin/format";
@@ -51,7 +51,11 @@ export default async function EntriesPage({ params, searchParams }: { params: Pr
 
   const entries = await prisma.financeEntry.findMany({
     where,
-    include: { client: { select: { name: true, company: true } }, _count: { select: { files: true } } },
+    include: {
+      client: { select: { name: true, company: true } },
+      invoice: { select: { number: true, status: true } },
+      _count: { select: { files: true } },
+    },
     orderBy: view === "pagos" ? { paidAt: "desc" } : { dueDate: "asc" },
     take: 500,
   });
@@ -131,7 +135,7 @@ export default async function EntriesPage({ params, searchParams }: { params: Pr
                   </td>
                   <td>
                     {e.asaasPaymentId ? <span className="adm-badge">Asaas</span> : "—"}
-                    {e.nfStatus && <span className={`adm-badge nf-${e.nfStatus}`}>NF {e.nfNumber ?? e.nfStatus.toLowerCase()}</span>}
+                    {e.invoice && <InvoiceBadge status={e.invoice.status} number={e.invoice.number} />}
                   </td>
                 </tr>
               ))}

@@ -123,3 +123,20 @@ export const contractStatuses = [
   { value: "assinado", label: "Assinado" },
   { value: "cancelado", label: "Cancelado" },
 ] as const;
+
+/** Vencido é calculado pela validade (status enviado/visualizado com a data passada). */
+export const quoteStatuses = [
+  { value: "rascunho", label: "Rascunho" },
+  { value: "enviado", label: "Enviado" },
+  { value: "visualizado", label: "Visualizado pelo cliente" },
+  { value: "aprovado", label: "Aprovado" },
+  { value: "recusado", label: "Recusado" },
+  { value: "cancelado", label: "Cancelado" },
+] as const;
+
+export const invoiceStatuses = [
+  { value: "emitida", label: "Emitida" },
+  { value: "pendente", label: "Pendente" },
+  { value: "cancelada", label: "Cancelada" },
+  { value: "erro", label: "Com erro" },
+] as const;

@@ -66,6 +66,14 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
           </section>
 
           <section className="adm-card">
+            <h2>Proposta</h2>
+            <p className="adm-card-sub">Monte um orçamento com os serviços e valores e envie o link para o lead aprovar.</p>
+            <Link href={`/admin/orcamentos/novo?lead=${lead.id}`} className="adm-btn ghost">
+              + Orçamento
+            </Link>
+          </section>
+
+          <section className="adm-card">
             <h2>Fechou negócio?</h2>
             {lead.clientId ? (
               <p className="adm-card-sub">

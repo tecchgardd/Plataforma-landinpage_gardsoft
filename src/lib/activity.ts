@@ -1,7 +1,19 @@
 import "server-only";
 import { prisma } from "./prisma";
 
-export type Entity = "lead" | "cliente" | "projeto" | "campanha" | "conteudo" | "usuario" | "perfil" | "contrato" | "financeiro";
+export type Entity =
+  | "lead"
+  | "cliente"
+  | "projeto"
+  | "campanha"
+  | "conteudo"
+  | "usuario"
+  | "perfil"
+  | "orcamento"
+  | "contrato"
+  | "financeiro"
+  | "notafiscal"
+  | "comercial";
 
 /**
  * Registra uma ação no histórico do portal.
