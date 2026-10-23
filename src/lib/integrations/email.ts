@@ -1,18 +1,66 @@
 import "server-only";
 
+import nodemailer, { type Transporter } from "nodemailer";
+
 /**
- * Envio de e-mails pelo Resend (https://resend.com).
- * Variáveis: RESEND_API_KEY e MAIL_FROM (ex.: "Gardsoft <contato@gardsoft.com.br>", domínio verificado no Resend).
+ * Envio de e-mails por SMTP (ex.: Gmail) ou pelo Resend (https://resend.com). Com SMTP configurado, ele tem preferência.
+ * SMTP: SMTP_HOST, SMTP_PORT (465 = SSL, 587 = STARTTLS), SMTP_USER, SMTP_PASS. No Gmail, SMTP_PASS é uma "senha de app".
+ * Resend: RESEND_API_KEY e MAIL_FROM (domínio verificado no Resend).
+ * MAIL_FROM: remetente, ex.: "Gardsoft <contato@gardsoft.com.br>". No SMTP, sem MAIL_FROM usa o próprio SMTP_USER.
  */
 
+function smtpConfigured() {
+  return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+}
+
 export function emailConfigured() {
-  return Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM);
+  return smtpConfigured() || Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM);
+}
+
+/** Nome do serviço em uso, para as telas de integração. */
+export function emailProvider() {
+  if (smtpConfigured()) return process.env.SMTP_HOST === "smtp.gmail.com" ? "Gmail (SMTP)" : "SMTP";
+  return process.env.RESEND_API_KEY ? "Resend" : null;
 }
 
 export type Attachment = { filename: string; content: Buffer };
+type EmailInput = { to: string; subject: string; html: string; attachments?: Attachment[]; replyTo?: string };
 
-export async function sendEmail(input: { to: string; subject: string; html: string; attachments?: Attachment[]; replyTo?: string }) {
-  if (!emailConfigured()) throw new Error("Envio de e-mail não configurado: defina RESEND_API_KEY e MAIL_FROM.");
+let transport: Transporter | null = null;
+
+function smtp() {
+  if (!transport) {
+    const port = Number(process.env.SMTP_PORT || 465);
+    transport = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port,
+      secure: port === 465,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+  }
+  return transport;
+}
+
+async function sendSmtp(input: EmailInput) {
+  const from = process.env.MAIL_FROM || `Gardsoft <${process.env.SMTP_USER}>`;
+  try {
+    const info = await smtp().sendMail({
+      from,
+      to: input.to,
+      replyTo: input.replyTo || undefined,
+      subject: input.subject,
+      html: input.html,
+      attachments: input.attachments,
+    });
+    return { id: info.messageId };
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code === "EAUTH") throw new Error("SMTP recusou o login. No Gmail, use uma senha de app (não a senha da conta).");
+    throw new Error(`Falha ao enviar e-mail por SMTP: ${(error as Error).message}`);
+  }
+}
+
+async function sendResend(input: EmailInput) {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
@@ -31,6 +79,11 @@ export async function sendEmail(input: { to: string; subject: string; html: stri
     throw new Error(data.message ?? `Falha ao enviar e-mail (${res.status}).`);
   }
   return (await res.json()) as { id: string };
+}
+
+export async function sendEmail(input: EmailInput) {
+  if (!emailConfigured()) throw new Error("Envio de e-mail não configurado: defina SMTP_HOST/SMTP_USER/SMTP_PASS ou RESEND_API_KEY e MAIL_FROM.");
+  return smtpConfigured() ? sendSmtp(input) : sendResend(input);
 }
 
 const escape = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);

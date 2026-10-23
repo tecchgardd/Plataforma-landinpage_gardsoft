@@ -6,7 +6,7 @@ import PageHeader from "@/components/admin/PageHeader";
 import { requireUser } from "@/lib/session";
 import { getFinanceSettings } from "@/lib/finance/settings";
 import { asaasConfigured, asaasEnvironment } from "@/lib/integrations/asaas";
-import { emailConfigured } from "@/lib/integrations/email";
+import { emailConfigured, emailProvider } from "@/lib/integrations/email";
 import { saveBillingSettings } from "../../../_actions/settings";
 
 export const metadata = { title: "Cobrança e integrações" };
@@ -79,8 +79,20 @@ export default async function BillingSettingsPage() {
             </ol>
           </section>
           <section className="adm-card">
-            <h2>E-mail (Resend)</h2>
-            <p className={`adm-integration ${emailConfigured() ? "ok" : ""}`}>{emailConfigured() ? "Conectado" : "Não configurado"}</p>
+            <h2>E-mail</h2>
+            <p className={`adm-integration ${emailConfigured() ? "ok" : ""}`}>{emailConfigured() ? `Conectado · ${emailProvider()}` : "Não configurado"}</p>
+            <p className="adm-card-sub">Pelo Gmail (mais simples):</p>
+            <ol className="adm-howto">
+              <li>
+                Na conta Google, ative a verificação em duas etapas e crie uma{" "}
+                <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer">senha de app</a>.
+              </li>
+              <li>
+                No <code>.env.local</code>: <code>SMTP_HOST=smtp.gmail.com</code>, <code>SMTP_PORT=465</code>, <code>SMTP_USER</code> (o e-mail) e{" "}
+                <code>SMTP_PASS</code> (a senha de app, sem espaços).
+              </li>
+            </ol>
+            <p className="adm-card-sub">Ou pelo Resend (com domínio próprio):</p>
             <ol className="adm-howto">
               <li>
                 Crie a conta em <a href="https://resend.com" target="_blank" rel="noopener noreferrer">resend.com</a> e verifique o domínio da Gardsoft

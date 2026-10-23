@@ -2,45 +2,51 @@
 
 import { useState, useTransition } from "react";
 import { resetContent, saveContent } from "../../_actions/content";
-import { uploadImage } from "../../_actions/media";
+import { mediaRules, mediaUrl, uploadMedia, type MediaKind } from "@/lib/media";
 import type { FieldSpec, SectionSpec } from "./specs";
 
 type Obj = Record<string, unknown>;
 
-function ImageInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function MediaInput({ kind, value, onChange }: { kind: MediaKind; value: string; onChange: (v: string) => void }) {
   const [error, setError] = useState("");
-  const [pending, startTransition] = useTransition();
+  const [progress, setProgress] = useState<number | null>(null);
+  const pending = progress !== null;
+  const noun = kind === "video" ? "vídeo" : "imagem";
 
-  function upload(file: File | undefined) {
+  async function upload(input: HTMLInputElement) {
+    const file = input.files?.[0];
+    input.value = "";
     if (!file) return;
     setError("");
-    const data = new FormData();
-    data.set("file", file);
-    startTransition(async () => {
-      const result = await uploadImage(data);
-      if (result.error) setError(result.error);
-      else if (result.url) onChange(result.url);
-    });
+    setProgress(0);
+    const result = await uploadMedia(file, kind, setProgress);
+    setProgress(null);
+    if (result.error) setError(result.error);
+    else if (result.url) onChange(result.url);
   }
 
   return (
     <div className="adm-image">
       {value ? (
-        <img src={value} alt="" />
+        kind === "video" ? (
+          <video src={mediaUrl(value)} muted loop playsInline controls preload="metadata" />
+        ) : (
+          <img src={mediaUrl(value, { width: 480 })} alt="" />
+        )
       ) : (
-        <div className="adm-image-empty">Sem imagem</div>
+        <div className="adm-image-empty">Sem {noun}</div>
       )}
       <div className="adm-image-actions">
         <label className="adm-btn ghost small">
-          {pending ? "Enviando..." : value ? "Trocar imagem" : "Enviar imagem"}
-          <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onChange={(e) => upload(e.target.files?.[0])} disabled={pending} />
+          {pending ? `Enviando... ${progress}%` : value ? `Trocar ${noun}` : `Enviar ${noun}`}
+          <input type="file" accept={mediaRules[kind].accept} hidden onChange={(e) => upload(e.currentTarget)} disabled={pending} />
         </label>
         {value && (
-          <button type="button" className="adm-btn ghost small" onClick={() => onChange("")}>
+          <button type="button" className="adm-btn ghost small" onClick={() => onChange("")} disabled={pending}>
             Remover
           </button>
         )}
-        {error && <span className="adm-msg error">{error}</span>}
+        {error ? <span className="adm-msg error">{error}</span> : <small className="adm-hint">{mediaRules[kind].label}</small>}
       </div>
     </div>
   );
@@ -113,7 +119,7 @@ function Fields({ fields, value, onChange }: { fields: FieldSpec[]; value: Obj; 
     <div className="adm-form-grid">
       {fields.map((field) => {
         const current = value[field.key];
-        const wide = field.type === "textarea" || field.type === "list" || field.type === "image";
+        const wide = field.type === "textarea" || field.type === "list" || field.type === "image" || field.type === "video";
         if (field.type === "checkbox")
           return (
             <label key={field.key} className="adm-check wide">
@@ -139,7 +145,9 @@ function Fields({ fields, value, onChange }: { fields: FieldSpec[]; value: Obj; 
                 ))}
               </select>
             )}
-            {field.type === "image" && <ImageInput value={String(current ?? "")} onChange={(v) => set(field.key, v)} />}
+            {(field.type === "image" || field.type === "video") && (
+              <MediaInput kind={field.type} value={String(current ?? "")} onChange={(v) => set(field.key, v)} />
+            )}
             {field.type === "list" && <ListEditor spec={field} value={(current as Obj[]) ?? []} onChange={(v) => set(field.key, v)} />}
             {field.hint && <small className="adm-hint">{field.hint}</small>}
           </div>

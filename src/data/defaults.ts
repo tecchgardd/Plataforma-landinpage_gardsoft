@@ -131,6 +131,7 @@ const cases: SiteContent["cases"] = {
         "Uma vitrine premium para apresentar os produtos, transmitir frescor e levar o cliente direto ao pedido.",
       tags: ["Landing page", "Mobile first", "WhatsApp"],
       image: "",
+      video: "",
       published: true,
     },
     {
@@ -145,6 +146,7 @@ const cases: SiteContent["cases"] = {
         "Site institucional com serviços, portfólio e contato, reforçando a credibilidade da marca na região.",
       tags: ["Site institucional", "SEO", "Portfólio"],
       image: "",
+      video: "",
       published: true,
     },
     {
@@ -159,6 +161,7 @@ const cases: SiteContent["cases"] = {
         "Landing page para o grupo divulgar agenda, músicas e facilitar a contratação de shows.",
       tags: ["Landing page", "Agenda", "Contratação"],
       image: "",
+      video: "",
       published: true,
     },
   ],

@@ -2,7 +2,7 @@ import type { ContentKey } from "@/lib/content-schema";
 
 /** Descrição dos campos de cada seção, usada pelo editor genérico. */
 export type FieldSpec =
-  | { type: "text" | "textarea" | "tags" | "image" | "checkbox"; key: string; label: string; hint?: string }
+  | { type: "text" | "textarea" | "tags" | "image" | "video" | "checkbox"; key: string; label: string; hint?: string }
   | { type: "select"; key: string; label: string; options: { value: string; label: string }[]; hint?: string }
   | {
       type: "list";
@@ -153,6 +153,7 @@ export const sections: SectionSpec[] = [
           summary: "",
           tags: [],
           image: "",
+          video: "",
           published: false,
         },
         item: [
@@ -168,6 +169,12 @@ export const sections: SectionSpec[] = [
             key: "image",
             label: "Foto / print do projeto",
             hint: "Imagem horizontal (ideal 1600×1000). Sem foto, o site mostra uma ilustração com as cores do tema.",
+          },
+          {
+            type: "video",
+            key: "video",
+            label: "Vídeo do projeto (opcional)",
+            hint: "Toca sem som, em loop, no lugar da foto. A foto vira a capa enquanto o vídeo carrega. Ideal: até 20 s, horizontal.",
           },
           {
             type: "select",

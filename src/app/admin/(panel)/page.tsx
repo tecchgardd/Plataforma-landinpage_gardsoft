@@ -198,7 +198,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           </ul>
         </section>
 
-        <section className="adm-card">
+        <section className="adm-card adm-temp-card">
           <h2>Temperatura dos leads em aberto</h2>
           <p className="adm-card-sub">{openTotal} leads ainda em negociação.</p>
           <div className="adm-temps">

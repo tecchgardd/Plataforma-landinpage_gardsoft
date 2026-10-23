@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/session";
 import { money, shortDate } from "@/lib/admin/format";
 import { parseMonth } from "@/lib/admin/month";
 import { asaasConfigured, asaasEnvironment } from "@/lib/integrations/asaas";
-import { emailConfigured } from "@/lib/integrations/email";
+import { emailConfigured, emailProvider } from "@/lib/integrations/email";
 
 export const metadata = { title: "Financeiro" };
 
@@ -192,7 +192,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
               <strong>Asaas</strong> {asaasConfigured() ? `conectado (${asaasEnvironment() === "production" ? "produção" : "sandbox de testes"})` : "não configurado"}
             </li>
             <li className={emailConfigured() ? "ok" : ""}>
-              <strong>E-mail (Resend)</strong> {emailConfigured() ? "conectado" : "não configurado"}
+              <strong>E-mail{emailConfigured() ? ` (${emailProvider()})` : ""}</strong> {emailConfigured() ? "conectado" : "não configurado"}
             </li>
           </ul>
         </section>

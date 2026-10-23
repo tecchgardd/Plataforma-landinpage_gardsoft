@@ -65,7 +65,9 @@ Sem chaves, o módulo funciona em modo manual: o contrato gera um link para envi
 | --- | --- |
 | `ASAAS_API_KEY`, `ASAAS_ENV` | Boleto/Pix, baixa automática e NFS-e. Use `sandbox` para testar e `production` para valer. |
 | `ASAAS_WEBHOOK_TOKEN` | Token do webhook. No Asaas, cadastre `https://SEU-DOMINIO/api/webhooks/asaas` com este mesmo token, para eventos de cobranças e notas fiscais. |
-| `RESEND_API_KEY`, `MAIL_FROM` | Envio de contratos, cobranças e confirmações. O domínio do remetente precisa estar verificado no Resend. |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Fotos e vídeos do site e do portal, enviados direto do navegador para o Cloudinary e entregues já otimizados. Sem elas, as imagens ficam no banco e vídeos não podem ser enviados. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | Envio de contratos, cobranças e confirmações por SMTP (ex.: Gmail com senha de app). Quando preenchido, tem preferência sobre o Resend. |
+| `RESEND_API_KEY`, `MAIL_FROM` | Alternativa ao SMTP. O domínio do remetente precisa estar verificado no Resend. |
 
 O passo a passo também aparece no portal, em **Financeiro → Cobrança e integrações** (forma de cobrança, multa e juros). Os dados da empresa ficam em **Perfil da empresa**, o modelo de contrato em **Configuração CT** (revise as cláusulas com um advogado) e o código de serviço/ISS em **Notas fiscais → Configurações** (confirme com o contador).
 
@@ -97,7 +99,7 @@ Fluxo: **Lead ou cliente → Orçamento → Cliente aprova pelo link → Gerar c
 | `src/lib/files.ts` | Validação dos anexos (tipo conferido pelo conteúdo, até 10 MB) |
 | `src/app/api/arquivos/[tipo]/[id]` | Download de anexos de clientes, projetos e financeiro (exige login) |
 | `src/lib/finance/` | Orçamento e contrato (numeração, hash, PDF), notas fiscais, cobranças e configurações comerciais |
-| `src/lib/integrations/` | Clientes do Asaas e do Resend |
+| `src/lib/integrations/` | Clientes do Asaas, de e-mail (SMTP/Resend) e do Cloudinary |
 | `src/app/orcamento/[token]` | Página pública de aprovação do orçamento |
 | `src/app/contrato/[token]` | Página pública de assinatura do contrato |
 | `src/app/api/webhooks/asaas` | Webhook do Asaas (baixa automática e nota fiscal) |

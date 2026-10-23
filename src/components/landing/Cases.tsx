@@ -1,6 +1,7 @@
 import Icon from "@/components/ui/Icon";
 import { ContactButton } from "@/components/contact/ContactProvider";
 import type { SiteContent } from "@/lib/content-schema";
+import { mediaUrl } from "@/lib/media";
 
 function hostname(url: string) {
   try {
@@ -44,9 +45,22 @@ export default function Cases({ content }: { content: SiteContent["cases"] }) {
                     <i />
                     <span>{hostname(item.url)}</span>
                   </div>
-                  {item.image ? (
+                  {item.video ? (
                     <div className="case-screen case-photo">
-                      <img src={item.image} alt={`Página do projeto ${item.name}`} loading="lazy" />
+                      <video
+                        src={mediaUrl(item.video, { width: 1280 })}
+                        poster={item.image ? mediaUrl(item.image, { width: 1280 }) : undefined}
+                        aria-label={`Vídeo do projeto ${item.name}`}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        preload="metadata"
+                      />
+                    </div>
+                  ) : item.image ? (
+                    <div className="case-screen case-photo">
+                      <img src={mediaUrl(item.image, { width: 1280 })} alt={`Página do projeto ${item.name}`} loading="lazy" />
                     </div>
                   ) : (
                     <div className="case-screen">

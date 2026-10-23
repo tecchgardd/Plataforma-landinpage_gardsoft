@@ -151,7 +151,8 @@
   display: grid;
   gap: 20px;
   align-content: start;
-  max-width: 1400px;
+  width: 100%;
+  max-width: 1920px;
 }
 
 .adm-alert {
@@ -773,7 +774,7 @@
 }
 .adm-bars li {
   display: grid;
-  grid-template-columns: 130px 1fr 36px;
+  grid-template-columns: minmax(150px, max-content) 1fr 36px;
   align-items: center;
   gap: 12px;
   font-size: 14px;
@@ -800,6 +801,14 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+/* O card de temperatura acompanha a altura do funil ao lado: os blocos esticam para ocupar o espaço. */
+.adm-temp-card {
+  display: flex;
+  flex-direction: column;
+}
+.adm-temp-card .adm-temps {
+  flex: 1;
+}
 .adm-temps {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -808,6 +817,8 @@
 .adm-temp {
   display: grid;
   justify-items: start;
+  grid-template-rows: 1fr auto auto;
+  min-height: 140px;
   gap: 2px;
   padding: 16px;
   border-radius: 14px;
@@ -823,7 +834,9 @@
 }
 .adm-temp strong {
   font-family: var(--font-display), sans-serif;
-  font-size: 28px;
+  font-size: clamp(28px, 3vw, 44px);
+  line-height: 1.1;
+  margin-top: 12px;
   font-variant-numeric: tabular-nums;
 }
 .adm-temp small {
@@ -1554,6 +1567,7 @@
   flex-wrap: wrap;
 }
 .adm-image img,
+.adm-image video,
 .adm-image-empty {
   width: 220px;
   aspect-ratio: 16 / 10;
@@ -1789,8 +1803,14 @@
   }
   .adm-temp {
     grid-template-columns: auto auto 1fr;
+    grid-template-rows: none;
+    min-height: 0;
     align-items: center;
     gap: 10px;
+  }
+  .adm-temp strong {
+    margin-top: 0;
+    font-size: 28px;
   }
   .adm-bars li {
     grid-template-columns: 110px 1fr 30px;

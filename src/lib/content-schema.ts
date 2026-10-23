@@ -56,7 +56,8 @@ export const caseSchema = z.object({
   headline: str(120),
   summary: str(400),
   tags: list(6),
-  image: str(200),
+  image: str(300),
+  video: str(300).default(""),
   published: z.boolean(),
 });
 

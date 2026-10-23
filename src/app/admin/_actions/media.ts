@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
+import { cloudinaryConfigured, signUpload, type MediaKind, type SignedUpload } from "@/lib/integrations/cloudinary";
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
@@ -15,6 +16,17 @@ function detectImage(bytes: Buffer): string | null {
   return null;
 }
 
+/**
+ * Assinatura para o navegador enviar a foto ou o vídeo direto ao Cloudinary.
+ * Retorna null quando o Cloudinary não está configurado (as imagens caem no banco, via uploadImage).
+ */
+export async function signMediaUpload(kind: MediaKind): Promise<SignedUpload | null> {
+  await requireUser();
+  if (kind !== "image" && kind !== "video") throw new Error("Tipo de mídia inválido.");
+  return cloudinaryConfigured() ? signUpload(kind) : null;
+}
+
+/** Envio de imagem guardado no próprio banco. Usado só quando o Cloudinary não está configurado. */
 export async function uploadImage(formData: FormData): Promise<{ url?: string; error?: string }> {
   await requireUser();
   const file = formData.get("file");
