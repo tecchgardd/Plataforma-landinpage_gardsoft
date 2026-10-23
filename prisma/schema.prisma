@@ -1,0 +1,457 @@
+// Schema do banco da Gardsoft.
+// Após alterar: npm run db:migrate -- --name descricao-da-mudanca
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =========================================================
+// Better Auth (nomes de campos esperados pela biblioteca)
+// =========================================================
+
+model User {
+  id              String        @id
+  name            String
+  email           String        @unique
+  emailVerified   Boolean       @default(false) @map("email_verified")
+  image           String?
+  // plugin username do Better Auth
+  username        String?       @unique
+  displayUsername String?       @map("display_username")
+  /// Perfil do colaborador
+  phone           String?
+  jobTitle        String?       @map("job_title")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at")
+  sessions        Session[]
+  accounts        Account[]
+  contracts       Contract[]
+  leads           Lead[]        @relation("LeadOwner")
+  clients         Client[]      @relation("ClientOwner")
+  projects        Project[]     @relation("ProjectOwner")
+  activities      ActivityLog[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime @map("expires_at")
+  token     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("verification")
+}
+
+// =========================================================
+// Portal Gardsoft
+// =========================================================
+
+/// Conteúdo editável do site: uma linha por seção (site, services, story, cases...).
+model Content {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("content")
+}
+
+/// Imagens enviadas pelo portal (fotos dos cases etc.).
+model Media {
+  id        String   @id @default(uuid()) @db.Uuid
+  filename  String
+  mime      String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("media")
+}
+
+model Campaign {
+  id          String         @id @default(uuid()) @db.Uuid
+  name        String
+  /// Gerado a partir do nome; é o utm_campaign do link rastreável.
+  slug        String         @unique
+  /// Canais onde a campanha roda (instagram, google, flyer...)
+  channels    String[]       @default([])
+  status      String         @default("planejada")
+  /// Soma dos investimentos (CampaignCost), guardada para relatórios.
+  budgetCents Int            @default(0) @map("budget_cents")
+  startDate   DateTime?      @map("start_date") @db.Date
+  endDate     DateTime?      @map("end_date") @db.Date
+  notes       String?
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @default(now()) @updatedAt @map("updated_at")
+  leads       Lead[]
+  costs       CampaignCost[]
+
+  @@map("campaigns")
+}
+
+/// O que foi investido na campanha: tráfego pago, flyers, influenciador...
+model CampaignCost {
+  id          String   @id @default(uuid()) @db.Uuid
+  campaignId  String   @map("campaign_id") @db.Uuid
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  type        String
+  description String?
+  amountCents Int      @map("amount_cents")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([campaignId])
+  @@map("campaign_costs")
+}
+
+model Client {
+  id                String         @id @default(uuid()) @db.Uuid
+  /// Nome do responsável / contato
+  name              String
+  /// Empresa (razão social ou nome fantasia)
+  company           String?
+  email             String?
+  phone             String?
+  /// CPF ou CNPJ
+  document          String?
+  stateRegistration String?        @map("state_registration")
+  address           String?
+  zipCode           String?        @map("zip_code")
+  city              String?
+  state             String?        @db.VarChar(2)
+  notes             String?
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @default(now()) @updatedAt @map("updated_at")
+  /// Colaborador responsável pelo atendimento
+  ownerId           String?        @map("owner_id")
+  owner             User?          @relation("ClientOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  /// Cliente correspondente no Asaas (criado na primeira cobrança)
+  asaasCustomerId   String?        @map("asaas_customer_id")
+  contracts         Contract[]
+  entries           FinanceEntry[]
+  leads             Lead[]
+  projects          Project[]
+  files             ClientFile[]
+
+  @@map("clients")
+}
+
+/// Documentos do cliente (inscrição estadual, contrato social, comprovantes para nota fiscal...).
+model ClientFile {
+  id        String   @id @default(uuid()) @db.Uuid
+  clientId  String   @map("client_id") @db.Uuid
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  /// Nome original do arquivo
+  name      String
+  /// Descrição, ex.: "Inscrição estadual"
+  label     String?
+  mime      String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([clientId])
+  @@map("client_files")
+}
+
+model Lead {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String
+  email       String?
+  phone       String?
+  company     String?
+  service     String?
+  message     String?
+  source      String    @default("site")
+  temperature String    @default("morno")
+  status      String    @default("novo")
+  valueCents  Int       @default(0) @map("value_cents")
+  campaignId  String?   @map("campaign_id") @db.Uuid
+  campaign    Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  clientId    String?   @map("client_id") @db.Uuid
+  client      Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  utmSource   String?   @map("utm_source")
+  utmMedium   String?   @map("utm_medium")
+  utmCampaign String?   @map("utm_campaign")
+  /// Colaborador responsável pelo atendimento
+  ownerId     String?   @map("owner_id")
+  owner       User?     @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  notes       String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  projects    Project[]
+
+  @@index([status])
+  @@index([campaignId])
+  @@map("leads")
+}
+
+model Project {
+  id          String         @id @default(uuid()) @db.Uuid
+  name        String
+  clientId    String?        @map("client_id") @db.Uuid
+  client      Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  /// Colaborador responsável pelo projeto
+  ownerId     String?        @map("owner_id")
+  owner       User?          @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  /// Lead que originou o projeto
+  leadId      String?        @map("lead_id") @db.Uuid
+  lead        Lead?          @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  service     String?
+  stage       String         @default("briefing")
+  /// Ordem do card dentro da coluna do quadro
+  position    Int            @default(0)
+  valueCents  Int            @default(0) @map("value_cents")
+  startDate   DateTime?      @map("start_date") @db.Date
+  dueDate     DateTime?      @map("due_date") @db.Date
+  /// Escopo detalhado do projeto
+  description String?
+  /// Endereço publicado (produção)
+  url         String?
+  githubUrl   String?        @map("github_url")
+  previewUrl  String?        @map("preview_url")
+  designUrl   String?        @map("design_url")
+  docsUrl     String?        @map("docs_url")
+  notes       String?
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @default(now()) @updatedAt @map("updated_at")
+  tasks       ProjectTask[]
+  updates     ProjectNote[]
+  files       ProjectFile[]
+  contracts   Contract[]
+  entries     FinanceEntry[]
+
+  @@index([clientId])
+  @@index([stage, position])
+  @@map("projects")
+}
+
+/// Checklist do projeto.
+model ProjectTask {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @map("project_id") @db.Uuid
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title     String
+  done      Boolean  @default(false)
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([projectId])
+  @@map("project_tasks")
+}
+
+/// Histórico do projeto: anotações e mudanças de etapa.
+model ProjectNote {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @map("project_id") @db.Uuid
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  text      String
+  author    String?
+  /// "nota" (escrita pela equipe) ou "sistema" (registrada automaticamente)
+  kind      String   @default("nota")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([projectId])
+  @@map("project_notes")
+}
+
+/// Documentação do projeto (briefing, layouts, contratos...).
+model ProjectFile {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @map("project_id") @db.Uuid
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  label     String?
+  mime      String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([projectId])
+  @@map("project_files")
+}
+
+/// Histórico de tudo o que é feito no portal.
+model ActivityLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// Nome de quem fez (guardado mesmo se o usuário for excluído)
+  userName  String   @map("user_name")
+  /// criou, editou, excluiu, moveu, converteu...
+  action    String
+  /// lead, cliente, projeto, campanha, conteudo, usuario...
+  entity    String
+  entityId  String?  @map("entity_id")
+  summary   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([entity, entityId])
+  @@map("activity_logs")
+}
+
+// =========================================================
+// Administrativo financeiro
+// =========================================================
+
+/// Contrato de prestação de serviço, com assinatura eletrônica pelo link público.
+model Contract {
+  id              String         @id @default(uuid()) @db.Uuid
+  /// Número sequencial legível, ex.: GS-2026-0001
+  number          String         @unique
+  title           String
+  clientId        String         @map("client_id") @db.Uuid
+  client          Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  projectId       String?        @map("project_id") @db.Uuid
+  project         Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  /// rascunho, enviado, visualizado, assinado, cancelado
+  status          String         @default("rascunho")
+  scope           String
+  clauses         String
+  valueCents      Int            @map("value_cents")
+  /// Parcelas: [{ label, amountCents, dueDate }]
+  paymentPlan     Json           @map("payment_plan")
+  deliveryDays    Int?           @map("delivery_days")
+  /// Token secreto do link de assinatura
+  token           String         @unique
+  sentAt          DateTime?      @map("sent_at")
+  viewedAt        DateTime?      @map("viewed_at")
+  signedAt        DateTime?      @map("signed_at")
+  signerName      String?        @map("signer_name")
+  signerDocument  String?        @map("signer_document")
+  signerEmail     String?        @map("signer_email")
+  signerIp        String?        @map("signer_ip")
+  signerUserAgent String?        @map("signer_user_agent")
+  /// Assinatura desenhada (PNG em data URL)
+  signatureImage  String?        @map("signature_image")
+  /// SHA-256 do conteúdo assinado (código de verificação)
+  contentHash     String?        @map("content_hash")
+  createdById     String?        @map("created_by_id")
+  createdBy       User?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @default(now()) @updatedAt @map("updated_at")
+  entries         FinanceEntry[]
+
+  @@index([clientId])
+  @@index([status])
+  @@map("contracts")
+}
+
+/// Lançamento financeiro: conta a receber ou a pagar.
+model FinanceEntry {
+  id                String        @id @default(uuid()) @db.Uuid
+  /// receber | pagar
+  type              String
+  description       String
+  category          String
+  amountCents       Int           @map("amount_cents")
+  dueDate           DateTime      @map("due_date") @db.Date
+  /// pendente | pago | cancelado (vencido é calculado pela data)
+  status            String        @default("pendente")
+  paidAt            DateTime?     @map("paid_at") @db.Date
+  paidAmountCents   Int?          @map("paid_amount_cents")
+  /// boleto, pix, cartao, transferencia, dinheiro...
+  method            String?
+  clientId          String?       @map("client_id") @db.Uuid
+  client            Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  projectId         String?       @map("project_id") @db.Uuid
+  project           Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  contractId        String?       @map("contract_id") @db.Uuid
+  contract          Contract?     @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  /// Fornecedor (contas a pagar)
+  supplier          String?
+  installmentNumber Int?          @map("installment_number")
+  installmentTotal  Int?          @map("installment_total")
+  /// Agrupa parcelas e recorrências criadas juntas
+  groupId           String?       @map("group_id")
+  // Asaas — cobrança
+  asaasPaymentId    String?       @unique @map("asaas_payment_id")
+  asaasStatus       String?       @map("asaas_status")
+  invoiceUrl        String?       @map("invoice_url")
+  bankSlipUrl       String?       @map("bank_slip_url")
+  // Asaas — nota fiscal
+  asaasInvoiceId    String?       @unique @map("asaas_invoice_id")
+  nfStatus          String?       @map("nf_status")
+  nfNumber          String?       @map("nf_number")
+  nfPdfUrl          String?       @map("nf_pdf_url")
+  nfXmlUrl          String?       @map("nf_xml_url")
+  notes             String?
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @default(now()) @updatedAt @map("updated_at")
+  files             FinanceFile[]
+
+  @@index([type, status, dueDate])
+  @@index([clientId])
+  @@index([contractId])
+  @@map("finance_entries")
+}
+
+/// Comprovantes, boletos e notas anexados a um lançamento.
+model FinanceFile {
+  id        String       @id @default(uuid()) @db.Uuid
+  entryId   String       @map("entry_id") @db.Uuid
+  entry     FinanceEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  /// comprovante | boleto | nota | outro
+  kind      String       @default("comprovante")
+  name      String
+  label     String?
+  mime      String
+  size      Int
+  data      Bytes
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  @@index([entryId])
+  @@map("finance_files")
+}
+
+/// Eventos de webhook já processados (evita processar o mesmo aviso duas vezes).
+model WebhookEvent {
+  id        String   @id
+  source    String
+  event     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("webhook_events")
+}
