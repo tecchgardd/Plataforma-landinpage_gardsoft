@@ -7,9 +7,9 @@ import Logo from "@/components/brand/Logo";
 import Avatar from "./Avatar";
 import { authClient } from "@/lib/auth-client";
 
-type NavItem = { href: string; label: string; icon?: string; children?: NavItem[] };
+export type NavItem = { href: string; label: string; icon?: string; children?: NavItem[] };
 
-const links: NavItem[] = [
+export const links: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: "M4 13h6V4H4zM14 20h6V4h-6zM4 20h6v-4H4z" },
   { href: "/admin/leads", label: "Leads", icon: "M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M22 11h-6" },
   { href: "/admin/clientes", label: "Clientes", icon: "M3 21V7l9-4 9 4v14M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01" },
@@ -43,10 +43,10 @@ const links: NavItem[] = [
   { href: "/admin/historico", label: "Histórico", icon: "M12 8v4l3 2M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" },
 ];
 
-const leaves = (items: NavItem[]): NavItem[] => items.flatMap((i) => (i.children ? leaves(i.children) : [i]));
+export const leaves = (items: NavItem[]): NavItem[] => items.flatMap((i) => (i.children ? leaves(i.children) : [i]));
 
 /** Link ativo: o de caminho mais longo que contém a página atual (ex.: /admin/contratos/configuracao → Configuração CT). */
-function activeHref(pathname: string) {
+export function activeHref(pathname: string) {
   const match = leaves(links)
     .filter((l) => (l.href === "/admin" ? pathname === "/admin" : pathname === l.href || pathname.startsWith(`${l.href}/`)))
     .sort((a, b) => b.href.length - a.href.length)[0];
@@ -55,9 +55,9 @@ function activeHref(pathname: string) {
 
 const contains = (item: NavItem, href: string | null): boolean => item.href === href || Boolean(item.children?.some((c) => contains(c, href)));
 
-function Icon({ d }: { d: string }) {
+export function Icon({ d, size = 18 }: { d: string; size?: number }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={d} />
     </svg>
   );
@@ -116,7 +116,6 @@ function NavGroup({ item, active, onNavigate, depth }: { item: NavItem; active: 
 export default function Sidebar({ name, email, image }: { name: string; email: string; image: string | null }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const active = activeHref(pathname);
 
   async function logout() {
@@ -131,22 +130,20 @@ export default function Sidebar({ name, email, image }: { name: string; email: s
         <Link href="/admin" aria-label="Dashboard">
           <Logo size={24} />
         </Link>
-        <button type="button" className="adm-menu" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label="Menu">
-          {open ? "×" : "☰"}
-        </button>
+        <span className="adm-brand-tag">Portal</span>
       </div>
-      <aside className={`adm-sidebar ${open ? "open" : ""}`}>
-        <Link href="/admin" className="adm-brand" onClick={() => setOpen(false)}>
+      <aside className="adm-sidebar">
+        <Link href="/admin" className="adm-brand">
           <Logo size={28} />
           <span className="adm-brand-tag">Portal</span>
         </Link>
         <nav>
-          <NavList items={links} active={active} onNavigate={() => setOpen(false)} />
+          <NavList items={links} active={active} onNavigate={() => {}} />
         </nav>
         <Link
           href="/admin/perfil"
           className={`adm-user ${pathname.startsWith("/admin/perfil") ? "active" : ""}`}
-          onClick={() => setOpen(false)}
+         
           title="Abrir meu perfil"
         >
           <Avatar name={name} image={image} size={36} />

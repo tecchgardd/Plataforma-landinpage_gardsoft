@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/admin/Sidebar";
+import MobileNav from "@/components/admin/MobileNav";
+import TableLabels from "@/components/admin/TableLabels";
 import { usesDefaultPassword } from "@/lib/auth";
 import { requireUser } from "@/lib/session";
 
@@ -19,6 +21,8 @@ export default async function PanelLayout({ children }: { children: ReactNode })
         )}
         {children}
       </main>
+      <MobileNav name={user.name} email={user.email} image={user.image ?? null} />
+      <TableLabels />
     </div>
   );
 }

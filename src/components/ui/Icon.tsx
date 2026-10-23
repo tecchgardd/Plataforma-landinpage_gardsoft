@@ -1,6 +1,10 @@
 const paths = {
   arrow: "M7 17 17 7M8 7h9v9",
   arrowDown: "M12 5v14M6 13l6 6 6-6",
+  home: "M4 11 12 4l8 7M6 9.5V20h4.5v-5.5h3V20H18V9.5",
+  briefcase: "M4 8h16v11H4zM9 8V5.5h6V8M4 13h16",
+  history: "M3 12a9 9 0 1 0 2.6-6.4M3 4v4h4M12 8v4l3 2",
+  plus: "M12 5v14M5 12h14",
   chevronLeft: "m15 5-7 7 7 7",
   chevronRight: "m9 5 7 7-7 7",
   landing: "M4 5h16v14H4zM4 9h16M8 13h5M8 16h8",

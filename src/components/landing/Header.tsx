@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import Logo from "@/components/brand/Logo";
 import Icon from "@/components/ui/Icon";
 import { useContact } from "@/components/contact/ContactProvider";
-import type { nav } from "@/data/site";
+import { type nav, whatsappLink } from "@/data/site";
 
-export default function Header({ items }: { items: typeof nav }) {
+export default function Header({ items, whatsapp }: { items: typeof nav; whatsapp: string }) {
   const openContact = useContact();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const wa = whatsappLink(whatsapp, "Olá, Gardsoft! Vim pelo site e quero conversar sobre um projeto.");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -46,6 +47,11 @@ export default function Header({ items }: { items: typeof nav }) {
           <button type="button" className="btn btn-sm header-cta" onClick={() => openContact()}>
             Fale com a gente <Icon name="arrow" size={16} />
           </button>
+          {wa && (
+            <a className="header-wa" href={wa} target="_blank" rel="noopener noreferrer" aria-label="Conversar no WhatsApp">
+              <Icon name="whatsapp" size={22} />
+            </a>
+          )}
           <button
             type="button"
             className="menu-toggle"

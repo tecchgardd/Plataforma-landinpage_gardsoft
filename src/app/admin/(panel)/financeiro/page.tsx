@@ -129,7 +129,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
           <h2>Últimos 6 meses</h2>
           <p className="adm-card-sub">Valores efetivamente recebidos e pagos.</p>
           <div className="adm-table-wrap">
-            <table className="adm-table">
+            <table className="adm-table adm-table-keep">
               <thead>
                 <tr>
                   <th>Mês</th>

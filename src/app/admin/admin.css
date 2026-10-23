@@ -3005,3 +3005,529 @@
     width: 100%;
   }
 }
+
+/* =========================================================
+   Celular — portal como app
+   Barra inferior no estilo Instagram (só ícones, avatar no fim),
+   painéis que sobem de baixo e tabelas que viram lista de cards.
+   ========================================================= */
+.adm-tabbar {
+  display: none;
+}
+
+/* painel inferior (criar / menu) */
+.adm-sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 88dvh;
+  margin: auto auto 0;
+  padding: 0;
+  border: 0;
+  border-radius: 24px 24px 0 0;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 -20px 60px -20px rgba(8, 18, 51, 0.35);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.adm-sheet::backdrop {
+  background: rgba(8, 18, 51, 0.45);
+}
+.adm-sheet[open] {
+  animation: adm-sheet-in 0.32s var(--ease);
+}
+@keyframes adm-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+.adm-sheet-body {
+  padding: 8px 16px calc(24px + env(safe-area-inset-bottom));
+}
+.adm-sheet-grabber {
+  display: block;
+  width: 40px;
+  height: 4px;
+  margin: 4px auto 16px;
+  border-radius: 4px;
+  background: var(--line-strong);
+}
+.adm-sheet-title {
+  margin-bottom: 20px;
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+}
+.adm-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px 8px;
+}
+.adm-sheet-tile {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--ink-2);
+}
+.adm-sheet-tile span {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: var(--bg-tint);
+  color: var(--blue);
+  transition: transform 0.15s;
+}
+.adm-sheet-tile:active span {
+  transform: scale(0.92);
+}
+.adm-sheet-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--bg-soft);
+}
+.adm-sheet-profile span {
+  display: grid;
+  min-width: 0;
+}
+.adm-sheet-profile strong,
+.adm-sheet-profile small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.adm-sheet-profile small {
+  font-size: 13px;
+  color: var(--muted);
+}
+.adm-sheet-profile em {
+  margin-left: auto;
+  flex: none;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--blue);
+}
+.adm-sheet-section h3 {
+  margin: 24px 4px 8px;
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.adm-sheet-list {
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.adm-sheet-list a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.adm-sheet-list a:last-child {
+  border-bottom: 0;
+}
+.adm-sheet-list a svg {
+  color: var(--muted);
+}
+.adm-sheet-list a.active,
+.adm-sheet-list a.active svg {
+  color: var(--blue);
+}
+.adm-sheet-list a.active {
+  background: var(--bg-soft);
+}
+.adm-sheet-list a:active {
+  background: var(--bg-tint);
+}
+.adm-sheet-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 24px;
+}
+.adm-sheet-actions a,
+.adm-sheet-actions button {
+  display: grid;
+  place-items: center;
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.adm-sheet-actions button {
+  color: var(--err);
+}
+
+@media (max-width: 900px) {
+  /* minmax(0, 1fr): a coluna não cresce até a largura da tabela (evitava a rolagem lateral da página) */
+  .adm-shell {
+    grid-template-columns: minmax(0, 1fr);
+    /* em páginas curtas, a altura que sobra não estica a barra do topo */
+    align-content: start;
+  }
+  .adm-sidebar {
+    display: none;
+  }
+  .adm-topbar {
+    justify-content: flex-start;
+    gap: 10px;
+    padding: max(12px, env(safe-area-inset-top)) 16px 12px;
+  }
+  .adm-main {
+    gap: 16px;
+    padding: 16px 16px calc(88px + env(safe-area-inset-bottom));
+  }
+
+  .adm-tabbar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    height: calc(56px + env(safe-area-inset-bottom));
+    padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--line);
+  }
+  .adm-tabbar > a,
+  .adm-tabbar > button {
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: none;
+    color: var(--ink-2);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .adm-tabbar svg {
+    transition: transform 0.15s;
+  }
+  .adm-tabbar .active {
+    color: var(--ink);
+  }
+  .adm-tabbar .active svg {
+    stroke-width: 2.6;
+  }
+  .adm-tabbar > :active svg,
+  .adm-tabbar > :active .adm-avatar,
+  .adm-tabbar > :active .adm-avatar-img {
+    transform: scale(0.88);
+  }
+  .adm-tabbar-me .adm-avatar,
+  .adm-tabbar-me .adm-avatar-img {
+    transition: box-shadow 0.2s, transform 0.15s;
+  }
+  .adm-tabbar-me.active .adm-avatar,
+  .adm-tabbar-me.active .adm-avatar-img {
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--ink);
+  }
+  .adm-tabbar > :focus-visible {
+    outline-offset: -6px;
+  }
+}
+
+@media (max-width: 760px) {
+  .adm-root input:not([type="checkbox"]):not([type="radio"]),
+  .adm-root select,
+  .adm-root textarea {
+    font-size: 16px; /* evita o zoom automático do iOS ao focar */
+  }
+  .adm-btn {
+    min-height: 44px;
+  }
+  .adm-alert {
+    padding: 12px 16px;
+    font-size: 13.5px;
+  }
+  .adm-page-head {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .adm-page-head h1 {
+    font-size: 26px;
+  }
+
+  /* abas de filtro rápido: deslizam até a borda da tela, mas o 1º item fica alinhado ao conteúdo */
+  .adm-tabs {
+    margin-inline: -16px;
+    padding: 0 16px 2px;
+    scroll-padding-inline: 16px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+  .adm-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .adm-tabs a {
+    min-height: 40px;
+    scroll-snap-align: start;
+  }
+}
+
+/* =========================================================
+   Listas em cards — dependem da largura da área de conteúdo
+   (container query), não da tela: funcionam no celular, no tablet
+   e no computador com a barra lateral aberta e pouco espaço.
+   ========================================================= */
+.adm-main {
+  container: adm-main / inline-size;
+}
+
+@container adm-main (max-width: 860px) {
+  /* filtros: busca na largura toda, selects lado a lado */
+  .adm-filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .adm-root .adm-filters > input[name="q"],
+  .adm-root .adm-filters > input[type="search"] {
+    grid-column: 1 / -1;
+  }
+  .adm-root .adm-filters select,
+  .adm-root .adm-filters input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* a caixa da tabela some: cada linha vira um card próprio */
+  .adm-table-wrap.adm-card:has(> .adm-table:not(.adm-table-keep):not(.adm-table-keep)) {
+    overflow: visible;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .adm-table:not(.adm-table-keep),
+  .adm-table:not(.adm-table-keep) tbody {
+    display: block;
+  }
+  .adm-table:not(.adm-table-keep) tbody {
+    display: grid;
+    gap: 12px;
+  }
+  .adm-table:not(.adm-table-keep) thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .adm-table:not(.adm-table-keep) tr {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 12px 16px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(10, 20, 48, 0.04);
+  }
+  .adm-table:not(.adm-table-keep) tbody tr:hover {
+    background: #fff;
+    border-color: var(--line-strong);
+  }
+  .adm-table:not(.adm-table-keep) tr.is-muted {
+    background: var(--bg-soft);
+  }
+  .adm-table:not(.adm-table-keep) td,
+  .adm-table:not(.adm-table-keep) tbody tr:last-child td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+  }
+  /* título do card: nome na linha toda, com espaço para os botões do canto */
+  .adm-table:not(.adm-table-keep) td:first-child {
+    grid-column: 1 / -1;
+    min-width: 0;
+    padding: 0 96px 12px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 15px;
+  }
+  .adm-table:not(.adm-table-keep) td:not(:first-child)::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .adm-table:not(.adm-table-keep) td[data-label=""]::before {
+    display: none;
+  }
+  .adm-table:not(.adm-table-keep) .num {
+    text-align: left;
+  }
+  /* ações da linha no canto superior do card */
+  .adm-table:not(.adm-table-keep) td:has(> .adm-row-actions):not(:has(.adm-btn)) {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+  }
+  .adm-table:not(.adm-table-keep) td:has(> .adm-row-actions .adm-btn) {
+    grid-column: 1 / -1;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .adm-table:not(.adm-table-keep) td:has(> .adm-row-actions .adm-btn) .adm-row-actions {
+    justify-content: stretch;
+  }
+  .adm-table:not(.adm-table-keep) td:has(> .adm-row-actions .adm-btn) .adm-row-actions > *,
+  .adm-table:not(.adm-table-keep) td:has(> .adm-row-actions .adm-btn) .adm-btn {
+    flex: 1;
+  }
+  .adm-table:not(.adm-table-keep) tr:has(.adm-row-actions .adm-btn) td:first-child {
+    padding-right: 0;
+  }
+  /* textos longos (e-mails, links) quebram dentro do card */
+  .adm-table:not(.adm-table-keep) td {
+    overflow-wrap: anywhere;
+  }
+  .adm-table:not(.adm-table-keep) td:has(> .adm-row-actions)::before {
+    display: none;
+  }
+  .adm-row-actions {
+    gap: 8px;
+  }
+  .adm-row-actions .adm-icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+  .adm-root select.adm-status-select {
+    width: 100%;
+    min-width: 0;
+  }
+  /* o seletor de status ocupa a linha toda, para o texto não cortar */
+  .adm-table:not(.adm-table-keep) td:has(> select.adm-status-select) {
+    grid-column: 1 / -1;
+  }
+  .adm-table:not(.adm-table-keep) tr.adm-total-row {
+    background: var(--bg-soft);
+    border-color: var(--line-strong);
+  }
+  /* tabela compacta (resumos): menos respiro e sem a barrinha, para caber na largura */
+  .adm-table-keep th,
+  .adm-table-keep td {
+    padding: 10px 12px;
+  }
+  .adm-table-keep td:first-child {
+    min-width: 0;
+  }
+  .adm-table-keep .adm-bar-track {
+    display: none;
+  }
+  /* "Ver todos →" não quebra embaixo do título do card */
+  .adm-card-head > a {
+    flex: none;
+    white-space: nowrap;
+  }
+}
+
+/* com espaço sobrando (tablet / janela média), dois cards por linha */
+@container adm-main (min-width: 620px) and (max-width: 860px) {
+  .adm-table:not(.adm-table-keep) tbody {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* campos de arquivo: cabem na coluna e o botão segue o visual do portal */
+.adm-root input[type="file"] {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.adm-root input[type="file"]::file-selector-button {
+  min-height: 40px;
+  margin-right: 12px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-soft);
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.adm-root label,
+.adm-form-grid > *,
+.adm-fieldset > * {
+  min-width: 0;
+}
+
+/* alvos de toque (celular, tablet e qualquer tela de toque): no mínimo 40–44px, sem mudar o espaçamento visual */
+@media (max-width: 900px), (pointer: coarse) {
+  .adm-back {
+    display: inline-flex;
+    align-items: center;
+    padding-block: 12px;
+    margin: -12px 0 -4px;
+  }
+  .adm-alert a,
+  .adm-card-head > a {
+    display: inline-flex;
+    align-items: center;
+    padding-block: 10px;
+    margin-block: -10px;
+  }
+  .adm-root .adm-icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+  .adm-root input[type="checkbox"],
+  .adm-root input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--blue);
+  }
+}
+
+/* resumo com 4 indicadores (orçamentos): 4 → 2 → 1 colunas conforme a largura do conteúdo */
+.adm-kpis-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@container adm-main (max-width: 980px) {
+  .adm-kpis-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container adm-main (max-width: 520px) {
+  .adm-root .adm-kpis-4 {
+    grid-template-columns: 1fr;
+  }
+  .adm-root .adm-kpis-4 .adm-kpi:first-child {
+    grid-column: auto;
+  }
+}

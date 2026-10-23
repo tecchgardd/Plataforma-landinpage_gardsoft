@@ -2939,8 +2939,7 @@ details[open] .faq-plus::after {
     padding-inline: 16px;
     scroll-padding-inline: 16px;
   }
-  .steps,
-  .footer-top {
+  .steps {
     grid-template-columns: 1fr;
   }
   .steps {
@@ -2971,6 +2970,414 @@ details[open] .faq-plus::after {
   }
   .case-preview {
     padding: 22px 22px 0;
+  }
+}
+
+/* =========================================================
+   Celular — experiência de app
+   Grade de 8px, margem lateral de 16px, alvos de toque de 44px+,
+   barra de abas inferior respeitando a área segura do iPhone.
+   ========================================================= */
+.tabbar,
+.header-wa {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  :root {
+    --header-h: 60px;
+    --tabbar-h: 64px;
+    --gutter: 16px;
+  }
+  body {
+    padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  }
+  a,
+  button,
+  summary {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .container,
+  .header-inner {
+    padding-inline: max(var(--gutter), env(safe-area-inset-left));
+  }
+
+  /* --- barra superior: logo + atalho do WhatsApp --- */
+  .header-inner {
+    gap: 12px;
+  }
+  .header-brand {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .header-nav,
+  .menu-toggle,
+  .header-cta {
+    display: none;
+  }
+  .header-wa {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-left: auto;
+    border-radius: 14px;
+    background: #e8f9ef;
+    color: #0f8f43;
+  }
+  .header-wa:active {
+    transform: scale(0.92);
+  }
+  .float-cta {
+    display: none;
+  }
+
+  /* --- barra de abas --- */
+  .tabbar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 60;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    align-items: stretch;
+    height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+    padding: 0 max(4px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(4px, env(safe-area-inset-left));
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(18px) saturate(1.6);
+    -webkit-backdrop-filter: blur(18px) saturate(1.6);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -8px 24px -16px rgba(10, 20, 48, 0.18);
+  }
+  .tabbar-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: var(--muted);
+    transition: color 0.2s;
+  }
+  .tabbar-item svg {
+    box-sizing: content-box;
+    padding: 4px 16px;
+    border-radius: 999px;
+    transition: background 0.25s, transform 0.2s var(--ease);
+  }
+  .tabbar-item.active {
+    color: var(--blue);
+  }
+  .tabbar-item.active svg {
+    background: var(--bg-tint);
+  }
+  .tabbar-item:active svg {
+    transform: scale(0.9);
+  }
+  .tabbar-item:focus-visible {
+    outline-offset: -4px;
+  }
+  .tabbar-main {
+    color: var(--ink);
+  }
+  .tabbar-main svg {
+    padding: 0;
+    background: none !important;
+  }
+  .tabbar-fab {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    margin-top: -24px;
+    margin-bottom: 2px;
+    border-radius: 18px;
+    background: var(--grad);
+    color: #fff;
+    border: 4px solid #fff;
+    box-shadow: 0 10px 22px -8px rgba(22, 56, 245, 0.6);
+    transition: transform 0.2s var(--ease);
+  }
+  .tabbar-main:active .tabbar-fab {
+    transform: scale(0.92);
+  }
+
+  /* --- ritmo vertical das seções --- */
+  .section {
+    padding-block: 64px;
+  }
+  .section-head {
+    margin-bottom: 32px;
+  }
+  .section-head h2 {
+    margin: 12px 0;
+    font-size: 30px;
+    line-height: 1.12;
+  }
+  .section-head p {
+    font-size: 16px;
+  }
+  .section-head.split {
+    gap: 12px;
+  }
+
+  /* --- hero --- */
+  .hero {
+    min-height: auto;
+    padding: calc(var(--header-h) + 24px) 0 56px;
+  }
+  .hero-title {
+    margin: 20px 0;
+    font-size: 40px;
+  }
+  .hero-actions {
+    gap: 12px;
+    margin-top: 28px;
+  }
+  .hero-pillars {
+    gap: 8px 16px;
+    margin-top: 24px;
+  }
+  .hero-stage {
+    max-width: 340px;
+    margin: 40px auto 0;
+  }
+  .code-card {
+    left: 0;
+  }
+  .marquee-wrap {
+    margin-top: -24px;
+    padding-block: 16px;
+  }
+
+  /* --- serviços: carrossel deslizável, como uma lista horizontal de app --- */
+  .services-grid {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 84%;
+    gap: 12px;
+    margin-inline: calc(var(--gutter) * -1);
+    padding: 4px var(--gutter) 16px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter);
+    scrollbar-width: none;
+  }
+  .services-grid::-webkit-scrollbar {
+    display: none;
+  }
+  html.js .services-grid [data-reveal] {
+    opacity: 1;
+    translate: none;
+  }
+  .service-card {
+    scroll-snap-align: start;
+    padding: 24px 20px;
+  }
+  .service-card ul {
+    margin: 16px 0;
+  }
+
+  /* --- história --- */
+  .story-inner {
+    gap: 32px;
+  }
+  .story-quote {
+    margin-top: 24px;
+    padding: 24px 20px;
+  }
+  .timeline {
+    gap: 12px;
+    padding-left: 0;
+  }
+  .timeline::before {
+    left: 15px;
+  }
+  .timeline-item {
+    padding-left: 44px;
+  }
+  .timeline-dot {
+    left: 0;
+    top: 20px;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    font-size: 11px;
+  }
+  .timeline-card {
+    padding: 20px;
+  }
+  .values {
+    margin-top: 32px;
+  }
+  .value {
+    padding: 16px 20px;
+  }
+
+  /* --- cases --- */
+  .cases-track {
+    margin-inline: calc(var(--gutter) * -1);
+    padding: 8px var(--gutter) 24px;
+    scroll-padding-inline: var(--gutter);
+  }
+  .case-preview {
+    padding: 16px 16px 0;
+  }
+  .case-info {
+    padding: 20px;
+  }
+  .case-info h3 {
+    font-size: 22px;
+  }
+  .case-arrow {
+    width: 36px;
+    height: 36px;
+  }
+  .case-tags {
+    margin-top: 16px;
+  }
+  .case-next-inner {
+    padding: 24px 20px;
+  }
+
+  /* --- processo: lista vertical com número à esquerda --- */
+  .steps {
+    grid-template-columns: 1fr;
+    row-gap: 24px;
+  }
+  .step {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    column-gap: 16px;
+    align-content: start;
+  }
+  .step-num {
+    grid-row: span 3;
+    width: 48px;
+    height: 48px;
+    margin: 0;
+    font-size: 16px;
+    border-radius: 16px;
+  }
+
+  /* --- banners --- */
+  .banner-wrap {
+    padding-block: 8px;
+  }
+  .banner {
+    border-radius: 24px;
+  }
+  .banner-blue,
+  .banner-light,
+  .banner-dark {
+    padding: 28px 20px;
+  }
+  .split-banners {
+    gap: 12px;
+  }
+  .banner .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* --- CTA final --- */
+  .final-cta {
+    padding-block: 72px;
+  }
+  .final-actions {
+    width: 100%;
+  }
+
+  /* --- rodapé --- */
+  .footer {
+    padding-top: 48px;
+  }
+  .footer-top {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px 16px;
+  }
+  .footer-brand,
+  .footer-contact {
+    grid-column: 1 / -1;
+  }
+  .footer-col a {
+    min-height: 36px;
+  }
+  .footer-word {
+    margin-top: 32px;
+  }
+  .footer-bottom {
+    flex-direction: column;
+    gap: 4px;
+    padding-block: 20px;
+    font-size: 13px;
+  }
+  .footer-legal {
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 24px;
+  }
+
+  /* --- formulário como "bottom sheet" --- */
+  #contact-dialog {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92dvh;
+    margin: auto 0 0;
+    padding: 32px var(--gutter) calc(24px + env(safe-area-inset-bottom));
+    border-radius: 24px 24px 0 0;
+  }
+  #contact-dialog::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    width: 40px;
+    height: 4px;
+    translate: -50% 0;
+    border-radius: 4px;
+    background: var(--line-strong);
+  }
+  #contact-dialog[open] {
+    animation: sheet-in 0.4s var(--ease);
+  }
+  #contact-dialog h2 {
+    font-size: 26px;
+  }
+  #contact-dialog .close {
+    top: 16px;
+    right: 12px;
+    width: 44px;
+    height: 44px;
+  }
+  #brief-form input,
+  #brief-form select,
+  #brief-form textarea {
+    font-size: 16px; /* evita o zoom automático do iOS ao focar */
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/* toque: sem "hover preso" e com resposta visual ao pressionar */
+@media (hover: none) {
+  .case-card:hover,
+  .service-card:hover {
+    transform: none;
+  }
+  .btn:active,
+  .case-card:active,
+  .service-card:active {
+    transform: scale(0.98);
   }
 }
 

@@ -21,7 +21,8 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport: Viewport = { themeColor: "#ffffff" };
+// viewportFit cover: a barra de abas usa a área segura (safe-area) do iPhone.
+export const viewport: Viewport = { themeColor: "#ffffff", viewportFit: "cover" };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

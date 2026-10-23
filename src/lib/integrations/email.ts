@@ -1,26 +1,41 @@
 import "server-only";
 
 import nodemailer, { type Transporter } from "nodemailer";
+import { Resend } from "resend";
 
 /**
- * Envio de e-mails por SMTP (ex.: Gmail) ou pelo Resend (https://resend.com). Com SMTP configurado, ele tem preferência.
+ * Envio de e-mails pelo Resend (https://resend.com) ou por SMTP (ex.: Gmail).
+ * Resend: RESEND_API_KEY e MAIL_FROM (remetente de um domínio verificado no Resend).
  * SMTP: SMTP_HOST, SMTP_PORT (465 = SSL, 587 = STARTTLS), SMTP_USER, SMTP_PASS. No Gmail, SMTP_PASS é uma "senha de app".
- * Resend: RESEND_API_KEY e MAIL_FROM (domínio verificado no Resend).
  * MAIL_FROM: remetente, ex.: "Gardsoft <contato@gardsoft.com.br>". No SMTP, sem MAIL_FROM usa o próprio SMTP_USER.
+ * EMAIL_PROVIDER ("resend" ou "smtp") escolhe o serviço quando os dois estão configurados; sem ele, o SMTP tem preferência.
  */
 
 function smtpConfigured() {
   return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 }
 
+function resendConfigured() {
+  return Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM);
+}
+
+function activeProvider(): "smtp" | "resend" | null {
+  const preferred = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
+  if (preferred === "resend" && resendConfigured()) return "resend";
+  if (preferred === "smtp" && smtpConfigured()) return "smtp";
+  if (smtpConfigured()) return "smtp";
+  return resendConfigured() ? "resend" : null;
+}
+
 export function emailConfigured() {
-  return smtpConfigured() || Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM);
+  return activeProvider() !== null;
 }
 
 /** Nome do serviço em uso, para as telas de integração. */
 export function emailProvider() {
-  if (smtpConfigured()) return process.env.SMTP_HOST === "smtp.gmail.com" ? "Gmail (SMTP)" : "SMTP";
-  return process.env.RESEND_API_KEY ? "Resend" : null;
+  const provider = activeProvider();
+  if (provider === "smtp") return process.env.SMTP_HOST === "smtp.gmail.com" ? "Gmail (SMTP)" : "SMTP";
+  return provider === "resend" ? "Resend" : null;
 }
 
 export type Attachment = { filename: string; content: Buffer };
@@ -60,30 +75,30 @@ async function sendSmtp(input: EmailInput) {
   }
 }
 
+let resendClient: Resend | null = null;
+
 async function sendResend(input: EmailInput) {
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: process.env.MAIL_FROM,
-      to: [input.to],
-      reply_to: input.replyTo || undefined,
-      subject: input.subject,
-      html: input.html,
-      attachments: input.attachments?.map((a) => ({ filename: a.filename, content: a.content.toString("base64") })),
-    }),
-    cache: "no-store",
+  resendClient ??= new Resend(process.env.RESEND_API_KEY);
+  const { data, error } = await resendClient.emails.send({
+    from: process.env.MAIL_FROM!,
+    to: [input.to],
+    replyTo: input.replyTo || undefined,
+    subject: input.subject,
+    html: input.html,
+    attachments: input.attachments?.map((a) => ({ filename: a.filename, content: a.content })),
   });
-  if (!res.ok) {
-    const data = (await res.json().catch(() => ({}))) as { message?: string };
-    throw new Error(data.message ?? `Falha ao enviar e-mail (${res.status}).`);
+  if (error) {
+    // Com o remetente de teste (onboarding@resend.dev), o Resend só entrega para o e-mail da própria conta.
+    const hint = /testing emails|verify a domain/i.test(error.message) ? " Verifique um domínio no Resend para enviar a clientes." : "";
+    throw new Error(`Resend: ${error.message}${hint}`);
   }
-  return (await res.json()) as { id: string };
+  return { id: data.id };
 }
 
 export async function sendEmail(input: EmailInput) {
-  if (!emailConfigured()) throw new Error("Envio de e-mail não configurado: defina SMTP_HOST/SMTP_USER/SMTP_PASS ou RESEND_API_KEY e MAIL_FROM.");
-  return smtpConfigured() ? sendSmtp(input) : sendResend(input);
+  const provider = activeProvider();
+  if (!provider) throw new Error("Envio de e-mail não configurado: defina RESEND_API_KEY e MAIL_FROM, ou SMTP_HOST/SMTP_USER/SMTP_PASS.");
+  return provider === "resend" ? sendResend(input) : sendSmtp(input);
 }
 
 const escape = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);

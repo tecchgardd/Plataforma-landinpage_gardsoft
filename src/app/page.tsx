@@ -10,6 +10,7 @@ import Process from "@/components/landing/Process";
 import Testimonials from "@/components/landing/Testimonials";
 import FAQ from "@/components/landing/FAQ";
 import Footer, { FinalCTA, WhatsAppFloat } from "@/components/landing/Footer";
+import MobileTabBar from "@/components/landing/MobileTabBar";
 import { getSiteContent } from "@/lib/content";
 import { getLegalInfo } from "@/lib/legal";
 import { nav } from "@/data/site";
@@ -25,7 +26,7 @@ export default async function Page() {
   return (
     <ContactProvider services={content.services.items.map((s) => s.contact).filter(Boolean)} whatsapp={whatsapp}>
       <Effects />
-      <Header items={navItems} />
+      <Header items={navItems} whatsapp={whatsapp} />
       <main id="conteudo">
         <Hero content={content.hero} />
         <Marquee items={content.marquee.items} />
@@ -43,6 +44,7 @@ export default async function Page() {
       <aside aria-label="Contato rápido">
         <WhatsAppFloat whatsapp={whatsapp} />
       </aside>
+      <MobileTabBar />
     </ContactProvider>
   );
 }

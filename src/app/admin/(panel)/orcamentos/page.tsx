@@ -36,13 +36,15 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
     where.AND = [{ OR: [{ title: like }, { number: like }, { client: { name: like } }, { client: { company: like } }, { lead: { name: like } }, { lead: { company: like } }] }];
   }
 
-  const [quotes, openSum, decidedMonth] = await Promise.all([
+  const [quotes, draftSum, openSum, decidedMonth] = await Promise.all([
     prisma.quote.findMany({
       where,
       include: { client: { select: { name: true, company: true } }, lead: { select: { name: true, company: true } }, contract: { select: { number: true } } },
       orderBy: { createdAt: "desc" },
       take: 300,
     }),
+    // Rascunhos: montados, mas ainda não enviados ao cliente.
+    prisma.quote.aggregate({ where: { status: "rascunho" }, _sum: { totalCents: true }, _count: { _all: true } }),
     prisma.quote.aggregate({ where: { ...open, OR: [{ validUntil: null }, { validUntil: { gte: today } }] }, _sum: { totalCents: true }, _count: { _all: true } }),
     prisma.quote.groupBy({ by: ["status"], where: { decidedAt: { gte: monthStart } }, _sum: { totalCents: true }, _count: { _all: true } }),
   ]);
@@ -63,7 +65,12 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
           </Link>
         }
       />
-      <section className="adm-lead-kpis adm-kpis-3" aria-label="Resumo">
+      <section className="adm-lead-kpis adm-kpis-4" aria-label="Resumo">
+        <Link href={href("rascunho")} className="adm-kpi kpi-novo">
+          <span>Aguardando envio</span>
+          <strong>{money(draftSum._sum.totalCents)}</strong>
+          <small>{draftSum._count._all} rascunho(s) ainda não enviado(s)</small>
+        </Link>
         <Link href={href("abertos")} className="adm-kpi kpi-contato">
           <span>Aguardando resposta</span>
           <strong>{money(openSum._sum.totalCents)}</strong>
