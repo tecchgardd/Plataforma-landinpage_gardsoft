@@ -10,16 +10,28 @@ const LINE = "#E3E9F5";
 const SOFT = "#F5F8FF";
 
 const s = StyleSheet.create({
-  page: { paddingTop: 0, paddingBottom: 64, paddingHorizontal: 0, fontFamily: "Helvetica", fontSize: 9.5, color: INK, lineHeight: 1.45 },
-  band: { backgroundColor: BLUE, paddingVertical: 22, paddingHorizontal: 40, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  // A faixa azul é fixa no topo de toda página; o conteúdo começa abaixo dela.
+  page: { paddingTop: 96, paddingBottom: 64, paddingHorizontal: 0, fontFamily: "Helvetica", fontSize: 9.5, color: INK, lineHeight: 1.45 },
+  band: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 76,
+    backgroundColor: BLUE,
+    paddingHorizontal: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   brand: { flexDirection: "row", alignItems: "center" },
   word: { fontFamily: "Helvetica-Bold", fontSize: 16, color: "#FFFFFF", letterSpacing: 1.2, marginLeft: 8 },
   wordLight: { fontFamily: "Helvetica", color: "#CFE6FF" },
   bandRight: { alignItems: "flex-end" },
   bandSmall: { color: "#CFE6FF", fontSize: 8 },
   bandNumber: { color: "#FFFFFF", fontFamily: "Helvetica-Bold", fontSize: 11 },
-  body: { paddingHorizontal: 40, paddingTop: 22 },
-  title: { fontFamily: "Helvetica-Bold", fontSize: 17, marginBottom: 2 },
+  body: { paddingHorizontal: 40 },
+  title: { fontFamily: "Helvetica-Bold", fontSize: 17, lineHeight: 1.25, marginBottom: 6 },
   subtitle: { color: MUTED, marginBottom: 16 },
   h2: { fontFamily: "Helvetica-Bold", fontSize: 10.5, color: BLUE, textTransform: "uppercase", letterSpacing: 0.8, marginTop: 16, marginBottom: 8 },
   parties: { flexDirection: "row", gap: 12 },
@@ -39,7 +51,8 @@ const s = StyleSheet.create({
   signImage: { height: 48, objectFit: "contain", marginVertical: 6 },
   signLine: { borderTopWidth: 1, borderTopColor: INK, marginTop: 8, paddingTop: 4 },
   pending: { marginVertical: 18, color: MUTED, textAlign: "center" },
-  footer: { position: "absolute", bottom: 24, left: 40, right: 40, flexDirection: "row", justifyContent: "space-between", fontSize: 7.5, color: MUTED, borderTopWidth: 1, borderTopColor: LINE, paddingTop: 8 },
+  footerLine: { position: "absolute", bottom: 40, left: 40, right: 40, borderTopWidth: 1, borderTopColor: LINE },
+  footerLeft: { position: "absolute", bottom: 24, left: 40, fontSize: 7.5, color: MUTED },
 });
 
 function Shield({ size = 22, color = "#FFFFFF" }: { size?: number; color?: string }) {
@@ -216,12 +229,10 @@ function ContractDocument({
           </View>
         </View>
 
-        <View style={s.footer} fixed>
-          <Text>
-            {data.number} · {code}
-          </Text>
-          <Text render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`} />
-        </View>
+        <View style={s.footerLine} fixed />
+        <Text style={s.footerLeft} fixed>
+          {data.number} · {code}
+        </Text>
       </Page>
     </Document>
   );

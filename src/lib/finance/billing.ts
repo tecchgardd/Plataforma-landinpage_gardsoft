@@ -135,7 +135,7 @@ export async function markEntryPaid(
   if (entry.type === "receber") {
     const settings = await getFinanceSettings();
     if (settings.invoice.autoIssue && entry.asaasPaymentId && !entry.asaasInvoiceId) {
-      await issueEntryInvoice(entryId).catch((e) => logSystem("erro", "financeiro", `Nota fiscal não emitida: ${e.message}`, entryId));
+      await issueEntryInvoice(entryId).catch((e) => logSystem("erro", "financeiro", `Não emitiu a nota fiscal: ${e.message}`, entryId));
     }
     if (emailConfigured() && entry.client?.email) {
       await sendEmail({
@@ -149,11 +149,11 @@ export async function markEntryPaid(
             "Obrigado pela parceria!",
           ],
         }),
-      }).catch((e) => logSystem("erro", "financeiro", `E-mail de confirmação não enviado: ${e.message}`, entryId));
+      }).catch((e) => logSystem("erro", "financeiro", `Não enviou o e-mail de confirmação: ${e.message}`, entryId));
     }
   }
   if (input.source !== "manual") {
-    await logSystem("recebeu", "financeiro", `Pagamento confirmado pelo ${input.source}: ${entry.description}`, entryId);
+    await logSystem("recebeu", "financeiro", `Confirmou o pagamento via ${input.source}: ${entry.description}`, entryId);
   }
   return updated;
 }

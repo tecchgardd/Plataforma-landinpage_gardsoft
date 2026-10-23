@@ -115,6 +115,9 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
               {open.dueDate && <span>📅 Entrega {shortDate(fromDbDate(open.dueDate))}</span>}
             </div>
             <nav className="adm-modal-links" aria-label="Links do projeto">
+              <Link href={`/admin/contratos/novo?projeto=${open.id}`} className="adm-btn small">
+                Gerar contrato
+              </Link>
               {linkLabels.map(({ key, label }) =>
                 open[key] ? (
                   <a key={key} href={open[key]!} target="_blank" rel="noopener noreferrer" className="adm-btn ghost small">

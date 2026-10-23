@@ -13,6 +13,8 @@ const entities = [
   { value: "cliente", label: "Clientes" },
   { value: "projeto", label: "Projetos" },
   { value: "campanha", label: "Campanhas" },
+  { value: "contrato", label: "Contratos" },
+  { value: "financeiro", label: "Financeiro" },
   { value: "conteudo", label: "Conteúdo do site" },
   { value: "usuario", label: "Usuários" },
   { value: "perfil", label: "Perfil" },
@@ -29,6 +31,14 @@ const actionIcon: Record<string, string> = {
   comentou: "💬",
   concluiu: "✓",
   publicou: "🌐",
+  enviou: "✉",
+  assinou: "✍",
+  visualizou: "👁",
+  cobrou: "💳",
+  recebeu: "💰",
+  "deu baixa": "💰",
+  emitiu: "🧾",
+  erro: "⚠",
 };
 
 function entityHref(entity: string, id: string | null) {
@@ -46,6 +56,10 @@ function entityHref(entity: string, id: string | null) {
       return `/admin/usuarios/${id}`;
     case "conteudo":
       return `/admin/conteudo/${id}`;
+    case "contrato":
+      return `/admin/contratos/${id}`;
+    case "financeiro":
+      return /^[0-9a-f-]{36}$/.test(id) ? `/admin/financeiro/lancamento/${id}` : null;
     default:
       return null;
   }

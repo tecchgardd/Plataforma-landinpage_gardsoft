@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import Logo from "@/components/brand/Logo";
 import { prisma } from "@/lib/prisma";
 import { logSystem } from "@/lib/activity";
-import { loadContract, money, partyName, verificationCode } from "@/lib/finance/contract";
+import { loadContract, money, partyName, renderClauses, verificationCode } from "@/lib/finance/contract";
+import { getFinanceSettings } from "@/lib/finance/settings";
 import { formatCpfCnpj } from "@/lib/finance/document";
 import SignForm from "./SignForm";
 import "../contrato.css";
@@ -24,10 +25,14 @@ export default async function ContractSignPage({ params }: { params: Promise<{ t
   // Primeira abertura do link: registra a visualização.
   if (contract.status === "enviado") {
     await prisma.contract.updateMany({ where: { id: contract.id, status: "enviado" }, data: { status: "visualizado", viewedAt: new Date() } });
-    await logSystem("visualizou", "contrato", `${partyName(data.client)} abriu o contrato ${contract.number}`, contract.id, "Cliente");
+    await logSystem("visualizou", "contrato", `Abriu o contrato ${contract.number}`, contract.id, `${partyName(data.client)} (cliente)`);
   }
 
   const pdfUrl = `/contrato/${token}/pdf`;
+  const settings = await getFinanceSettings();
+  const company = settings.company;
+  const clauses = renderClauses(data, settings).split(/\n+/).filter(Boolean);
+  const dateOnly = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("pt-BR");
 
   return (
     <div className="ct-page">
@@ -81,14 +86,56 @@ export default async function ContractSignPage({ params }: { params: Promise<{ t
           </section>
         ) : (
           <>
+            {/* O contrato em HTML: legível em qualquer celular (muitos não exibem PDF embutido). */}
             <section className="ct-card ct-doc">
               <div className="ct-doc-head">
                 <h2>Leia o contrato</h2>
                 <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-                  Abrir em tela cheia ↗
+                  Ver em PDF ↗
                 </a>
               </div>
-              <iframe src={pdfUrl} title={`Contrato ${contract.number}`} />
+              <div className="ct-parties">
+                <div>
+                  <span>Contratada</span>
+                  <strong>{company.legalName || "Gardsoft"}</strong>
+                  {company.document && <small>CNPJ {company.document}</small>}
+                  {company.cityState && <small>{company.cityState}</small>}
+                </div>
+                <div>
+                  <span>Contratante</span>
+                  <strong>{partyName(data.client)}</strong>
+                  {data.client.document && <small>CPF/CNPJ {formatCpfCnpj(data.client.document)}</small>}
+                  {data.client.address && <small>{data.client.address}</small>}
+                  {data.client.city && (
+                    <small>
+                      {data.client.city}
+                      {data.client.state ? `/${data.client.state}` : ""}
+                    </small>
+                  )}
+                </div>
+              </div>
+              <h3>Escopo do projeto</h3>
+              <p className="ct-pre">{data.scope}</p>
+              <h3>Valor e plano de pagamento</h3>
+              <table className="ct-plan">
+                <tbody>
+                  {data.paymentPlan.map((p, i) => (
+                    <tr key={i}>
+                      <td>{p.label}</td>
+                      <td>{dateOnly(p.dueDate)}</td>
+                      <td>{money(p.amountCents)}</td>
+                    </tr>
+                  ))}
+                  <tr className="ct-plan-total">
+                    <td colSpan={2}>Valor total</td>
+                    <td>{money(data.valueCents)}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h3>Cláusulas</h3>
+              <div className="ct-clauses">
+                {clauses.map((line, i) => (/^CLÁUSULA/i.test(line) ? <h4 key={i}>{line}</h4> : <p key={i}>{line}</p>))}
+              </div>
             </section>
             <section className="ct-card">
               <h2>Assinar</h2>

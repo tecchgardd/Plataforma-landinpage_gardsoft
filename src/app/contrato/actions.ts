@@ -80,7 +80,7 @@ export async function signContract(token: string, _: SignState, formData: FormDa
   });
   if (result.count === 0) return { signed: true };
 
-  await logSystem("assinou", "contrato", `${parsed.data.name} assinou o contrato ${contract.number}`, contract.id, `${parsed.data.name} (cliente)`);
+  await logSystem("assinou", "contrato", `Assinou o contrato ${contract.number}`, contract.id, `${parsed.data.name} (cliente)`);
   if (contract.projectId) {
     await prisma.projectNote.create({
       data: {
@@ -104,7 +104,7 @@ export async function signContract(token: string, _: SignState, formData: FormDa
       }
     }
   } catch (error) {
-    await logSystem("erro", "financeiro", `Cobranças do contrato ${contract.number} não geradas: ${error instanceof Error ? error.message : "erro"}`, contract.id);
+    await logSystem("erro", "financeiro", `Não gerou as cobranças do contrato ${contract.number}: ${error instanceof Error ? error.message : "erro"}`, contract.id);
   }
 
   if (emailConfigured()) {
@@ -124,7 +124,7 @@ export async function signContract(token: string, _: SignState, formData: FormDa
         await sendEmail({ to: settings.company.email, subject: `✓ ${contract.client.company ?? contract.client.name} assinou o contrato ${contract.number}`, html, attachments });
       }
     } catch (error) {
-      await logSystem("erro", "contrato", `E-mail do contrato assinado não enviado: ${error instanceof Error ? error.message : "erro"}`, contract.id);
+      await logSystem("erro", "contrato", `Não enviou o e-mail do contrato assinado: ${error instanceof Error ? error.message : "erro"}`, contract.id);
     }
   }
 

@@ -63,16 +63,16 @@ export async function POST(request: Request) {
             });
             break;
           case "PAYMENT_OVERDUE":
-            await logSystem("venceu", "financeiro", `Cobrança vencida sem pagamento: ${entry.description}`, entry.id);
+            await logSystem("venceu", "financeiro", `Marcou como vencida, sem pagamento: ${entry.description}`, entry.id);
             break;
           case "PAYMENT_DELETED":
             if (entry.status === "pendente") await prisma.financeEntry.update({ where: { id: entry.id }, data: { status: "cancelado" } });
-            await logSystem("cancelou", "financeiro", `Cobrança removida no Asaas: ${entry.description}`, entry.id);
+            await logSystem("cancelou", "financeiro", `Cancelou a cobrança removida no Asaas: ${entry.description}`, entry.id);
             break;
           case "PAYMENT_REFUNDED":
           case "PAYMENT_RECEIVED_IN_CASH_UNDONE":
             await prisma.financeEntry.update({ where: { id: entry.id }, data: { status: "pendente", paidAt: null, paidAmountCents: null } });
-            await logSystem("estornou", "financeiro", `Pagamento estornado: ${entry.description}`, entry.id);
+            await logSystem("estornou", "financeiro", `Registrou estorno do pagamento: ${entry.description}`, entry.id);
             break;
         }
       }
@@ -91,9 +91,9 @@ export async function POST(request: Request) {
           },
         });
         if (body.event === "INVOICE_AUTHORIZED")
-          await logSystem("emitiu", "financeiro", `Nota fiscal ${body.invoice.number ?? ""} autorizada: ${entry.description}`, entry.id);
+          await logSystem("emitiu", "financeiro", `Recebeu a nota fiscal ${body.invoice.number ?? ""} autorizada: ${entry.description}`, entry.id);
         if (body.event === "INVOICE_ERROR")
-          await logSystem("erro", "financeiro", `Erro na nota fiscal (${body.invoice.statusDescription ?? "sem detalhes"}): ${entry.description}`, entry.id);
+          await logSystem("erro", "financeiro", `Recebeu erro na nota fiscal (${body.invoice.statusDescription ?? "sem detalhes"}): ${entry.description}`, entry.id);
       }
     }
 

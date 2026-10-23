@@ -491,7 +491,11 @@
   min-width: 150px;
   text-align: center;
   font-size: 15px;
-  text-transform: capitalize;
+}
+.adm-month strong::first-letter,
+.adm-chip-row strong::first-letter,
+.adm-log-day h2::first-letter {
+  text-transform: uppercase;
 }
 
 /* leads do mês: 5 cards; a cor fica só no filete (o texto é sempre escuro) */
@@ -744,7 +748,7 @@
   color: var(--ink-2);
 }
 .adm-chip-row strong {
-  text-transform: capitalize;
+  display: inline-block;
 }
 .adm-chip {
   padding: 4px 10px;
@@ -2365,7 +2369,6 @@
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0;
-  text-transform: capitalize;
   color: var(--muted);
 }
 .adm-log {
@@ -2490,5 +2493,251 @@
 @media (max-width: 600px) {
   .adm-root .adm-filters select {
     flex: 1 1 100%;
+  }
+}
+
+/* =========================================================
+   Financeiro e contratos
+   ========================================================= */
+.ct-rascunho {
+  background: #f2f4f7;
+  color: #475467;
+}
+.ct-enviado {
+  background: #e0efff;
+  color: #1849a9;
+}
+.ct-visualizado {
+  background: #f4ebff;
+  color: #6941c6;
+}
+.ct-assinado,
+.fin-pago {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.ct-cancelado,
+.fin-cancelado {
+  background: #f2f4f7;
+  color: #667085;
+  text-decoration: line-through;
+}
+.fin-pendente {
+  background: #fef0c7;
+  color: #93370d;
+}
+.fin-vencido {
+  background: #fee4e2;
+  color: #b42318;
+}
+.nf-AUTHORIZED {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.nf-ERROR {
+  background: #fee4e2;
+  color: #b42318;
+}
+.neg {
+  color: var(--err) !important;
+}
+.adm-fin-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.adm-fin-nav > a:not(.adm-btn) {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.adm-fin-nav > a:not(.adm-btn):hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.adm-fin-nav .adm-btn:first-of-type {
+  margin-left: auto;
+}
+.adm-inline-bar {
+  display: grid;
+  grid-template-columns: minmax(60px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+.adm-inline-bar b {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.adm-integrations {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+.adm-integrations li,
+.adm-integration {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #fef3f2;
+  color: #b42318;
+}
+.adm-integrations li.ok,
+.adm-integration.ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.adm-integration {
+  margin-bottom: 12px;
+  font-weight: 600;
+  font-size: 14px;
+}
+.adm-howto {
+  display: grid;
+  gap: 10px;
+  padding-left: 18px;
+  list-style: decimal;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.adm-howto a {
+  color: var(--blue);
+  font-weight: 600;
+}
+.adm-howto code:not(.adm-code) {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--bg-tint);
+  font-size: 12px;
+}
+.adm-howto .adm-code {
+  margin-top: 6px;
+  font-size: 12px;
+}
+.adm-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+.adm-action-button {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.adm-signed {
+  border-color: #abefc6;
+  background: linear-gradient(160deg, #fff, #ecfdf3);
+}
+.adm-signed h2 {
+  color: var(--ok);
+  margin-bottom: 10px;
+}
+.adm-signature {
+  display: block;
+  max-width: 280px;
+  max-height: 110px;
+  margin-top: 14px;
+  padding: 8px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+.adm-steps-v {
+  display: grid;
+  gap: 12px;
+}
+.adm-steps-v li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  color: var(--muted);
+}
+.adm-steps-v li > span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  font-size: 12px;
+}
+.adm-steps-v li.done {
+  color: var(--ink);
+}
+.adm-steps-v li.done > span {
+  border-color: var(--ok);
+  background: var(--ok);
+  color: #fff;
+}
+.adm-steps-v div {
+  display: grid;
+}
+.adm-steps-v small {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.adm-copylink {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+.adm-copylink-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.adm-plan {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+}
+.adm-plan-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+.adm-plan-presets > label {
+  display: grid;
+  gap: 6px;
+  width: 200px;
+}
+.adm-plan-presets > div {
+  display: grid;
+  gap: 6px;
+}
+.adm-plan-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.adm-plan .adm-costs-head,
+.adm-plan .adm-costs-row {
+  grid-template-columns: minmax(0, 1fr) 170px 140px 34px;
+}
+.adm-plan-diff {
+  font-style: normal;
+  font-size: 12.5px;
+  color: #93370d;
+}
+.adm-root .adm-filters input[type="month"] {
+  flex: 0 1 200px;
+}
+@media (max-width: 900px) {
+  .adm-plan .adm-costs-row {
+    grid-template-columns: 1fr 1fr 34px;
+  }
+  .adm-plan .adm-costs-row input:first-child {
+    grid-column: 1 / -1;
+  }
+  .adm-fin-nav .adm-btn:first-of-type {
+    margin-left: 0;
   }
 }

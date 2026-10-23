@@ -12,6 +12,8 @@ const links = [
   { href: "/admin/leads", label: "Leads", icon: "M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M22 11h-6" },
   { href: "/admin/clientes", label: "Clientes", icon: "M3 21V7l9-4 9 4v14M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01" },
   { href: "/admin/projetos", label: "Projetos", icon: "M3 7h18v13H3zM8 7V4h8v3M3 12h18" },
+  { href: "/admin/contratos", label: "Contratos", icon: "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h4" },
+  { href: "/admin/financeiro", label: "Financeiro", icon: "M3 7h18v12H3zM3 11h18M7 15h3M16 3v4M8 3v4" },
   { href: "/admin/campanhas", label: "Campanhas", icon: "M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12" },
   { href: "/admin/conteudo", label: "Conteúdo do site", icon: "M4 4h16v16H4zM4 9h16M9 9v11" },
   { href: "/admin/usuarios", label: "Usuários", icon: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M2 21a7 7 0 0 1 14 0M17 11a3 3 0 1 0 0-6M22 21a6 6 0 0 0-5-6" },

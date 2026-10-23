@@ -64,6 +64,9 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                 WhatsApp
               </a>
             )}
+            <Link href={`/admin/contratos/novo?cliente=${client.id}`} className="adm-btn ghost">
+              + Contrato
+            </Link>
             <Link href={`/admin/projetos/novo?cliente=${client.id}`} className="adm-btn">
               + Novo projeto
             </Link>

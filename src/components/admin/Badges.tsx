@@ -1,5 +1,6 @@
 import {
   campaignStatuses,
+  contractStatuses,
   labelOf,
   leadStatuses,
   projectStages,
@@ -31,4 +32,17 @@ export function StageBadge({ value }: { value: string }) {
 
 export function CampaignBadge({ value }: { value: string }) {
   return <span className={`adm-badge camp-${value}`}>{labelOf(campaignStatuses, value)}</span>;
+}
+
+export function ContractBadge({ status }: { status: string }) {
+  return <span className={`adm-badge ct-${status}`}>{labelOf(contractStatuses, status)}</span>;
+}
+
+/** Situação de um lançamento: pago, pendente, vencido (pela data) ou cancelado. */
+export function EntryBadge({ status, dueDate }: { status: string; dueDate: Date }) {
+  const today = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+  const overdue = status === "pendente" && dueDate.toISOString().slice(0, 10) < today;
+  const key = overdue ? "vencido" : status;
+  const label = { pago: "Pago", pendente: "Pendente", vencido: "Vencido", cancelado: "Cancelado" }[key] ?? key;
+  return <span className={`adm-badge fin-${key}`}>{label}</span>;
 }

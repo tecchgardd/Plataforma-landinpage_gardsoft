@@ -54,7 +54,8 @@ function addMonths(iso: string, months: number) {
 
 export async function saveEntry(id: string | null, _: FormState, formData: FormData): Promise<FormState> {
   const user = await requireUser();
-  const parsed = entrySchema.safeParse(formObject(formData));
+  // Receitas não têm "fornecedor" e despesas não têm "cliente" no formulário.
+  const parsed = entrySchema.safeParse({ clientId: "", supplier: "", projectId: "", method: "", notes: "", ...formObject(formData) });
   if (!parsed.success) return { error: firstError(parsed.error) };
   const { amount, dueDate, repeat, repeatMode, ...data } = parsed.data;
   const label = data.type === "receber" ? "conta a receber" : "conta a pagar";

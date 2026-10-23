@@ -19,7 +19,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ tipo
       ? await prisma.clientFile.findUnique({ where: { id }, select })
       : tipo === "projeto"
         ? await prisma.projectFile.findUnique({ where: { id }, select })
-        : null;
+        : tipo === "financeiro"
+          ? await prisma.financeFile.findUnique({ where: { id }, select })
+          : null;
   if (!file) return new Response("Not found", { status: 404 });
 
   // PDF e imagens abrem no navegador; o resto baixa.
