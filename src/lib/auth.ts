@@ -4,17 +4,15 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { username } from "better-auth/plugins";
 import { prisma } from "./prisma";
+import { siteUrl, vercelOrigins } from "./site-url";
 
-// Endereços que a Vercel atribui ao deploy (produção, branch e preview), aceitos como origem do login.
-const vercelOrigins = [process.env.VERCEL_PROJECT_PRODUCTION_URL, process.env.VERCEL_BRANCH_URL, process.env.VERCEL_URL]
-  .filter(Boolean)
-  .map((host) => `https://${host}`);
+const baseURL = siteUrl;
 
 export const auth = betterAuth({
   appName: "Gardsoft",
   secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: process.env.BETTER_AUTH_URL || vercelOrigins[0],
-  trustedOrigins: vercelOrigins,
+  baseURL,
+  trustedOrigins: [baseURL, ...vercelOrigins],
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,

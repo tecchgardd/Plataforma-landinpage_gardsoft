@@ -11,6 +11,7 @@ import { dateTime, money } from "@/lib/admin/format";
 import { campaignChannels, costTypes, labelOf } from "@/lib/admin/options";
 import { deleteCampaign, saveCampaign } from "../../../_actions/campaigns";
 import CampaignFields from "../CampaignFields";
+import { siteUrl } from "@/lib/site-url";
 import UtmLink from "./UtmLink";
 
 export const metadata = { title: "Campanha" };
@@ -26,7 +27,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
   if (!campaign) notFound();
 
   const h = await headers();
-  const origin = process.env.BETTER_AUTH_URL ?? `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
+  const origin = process.env.BETTER_AUTH_URL ? siteUrl : `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
   const closed = leads.filter((l) => l.status === "fechado");
   const revenue = closed.reduce((s, l) => s + l.valueCents, 0);
 

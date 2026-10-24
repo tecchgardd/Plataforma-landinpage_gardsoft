@@ -3,6 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { formatCpfCnpj } from "./document";
+import { siteUrl } from "@/lib/site-url";
 import type { FinanceSettings } from "./settings";
 
 export const installmentSchema = z.object({
@@ -115,7 +116,7 @@ export function contentHash(data: ContractData, settings: FinanceSettings) {
 export const verificationCode = (hash: string) => hash.slice(0, 16).toUpperCase().replace(/(.{4})(?!$)/g, "$1-");
 
 export function publicBaseUrl() {
-  return (process.env.BETTER_AUTH_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  return siteUrl;
 }
 
 export function signUrl(token: string) {

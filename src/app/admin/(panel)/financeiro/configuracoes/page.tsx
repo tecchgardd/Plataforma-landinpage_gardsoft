@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/session";
 import { getFinanceSettings } from "@/lib/finance/settings";
 import { asaasConfigured, asaasEnvironment } from "@/lib/integrations/asaas";
 import { emailConfigured, emailProvider } from "@/lib/integrations/email";
+import { siteUrl } from "@/lib/site-url";
 import { saveBillingSettings } from "../../../_actions/settings";
 
 export const metadata = { title: "Cobrança e integrações" };
@@ -15,7 +16,7 @@ export default async function BillingSettingsPage() {
   await requireUser();
   const { billing } = await getFinanceSettings();
   const h = await headers();
-  const origin = process.env.BETTER_AUTH_URL ?? `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
+  const origin = process.env.BETTER_AUTH_URL ? siteUrl : `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
   const pct = (n: number) => String(n).replace(".", ",");
 
   return (
