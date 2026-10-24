@@ -30,9 +30,9 @@ import EntryFields from "../../EntryFields";
 
 export const metadata = { title: "Lançamento" };
 
-export default async function EntryPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ erro?: string }> }) {
+export default async function EntryPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ erro?: string; aviso?: string }> }) {
   await requireUser();
-  const [{ id }, { erro }] = await Promise.all([params, searchParams]);
+  const [{ id }, { erro, aviso }] = await Promise.all([params, searchParams]);
   if (!z.uuid().safeParse(id).success) notFound();
   const [entry, clients, projects] = await Promise.all([
     prisma.financeEntry.findUnique({
@@ -41,6 +41,7 @@ export default async function EntryPage({ params, searchParams }: { params: Prom
         client: true,
         project: { select: { id: true, name: true } },
         contract: { select: { id: true, number: true } },
+        expense: { select: { id: true, name: true, frequency: true } },
         invoice: { select: { id: true, number: true, status: true, pdfUrl: true, xmlUrl: true } },
         files: { select: { id: true, name: true, label: true, size: true, mime: true, createdAt: true }, orderBy: { createdAt: "desc" } },
       },
@@ -70,9 +71,10 @@ export default async function EntryPage({ params, searchParams }: { params: Prom
             )}
           </>
         }
-        back={{ href: `/admin/financeiro/${entry.type}`, label: isIncome ? "Contas a receber" : "Contas a pagar" }}
+        back={{ href: isIncome ? "/admin/financeiro/cobrancas" : "/admin/financeiro/pagar", label: isIncome ? "Cobranças" : "Contas a pagar" }}
       />
       {erro === "asaas" && <p className="adm-alert">Cancele a cobrança no Asaas antes de excluir este lançamento.</p>}
+      {aviso && <p className="adm-alert">A cobrança foi lançada, mas o boleto/e-mail falhou: {aviso}</p>}
 
       <div className="adm-detail">
         <div className="adm-modal-main">
@@ -82,6 +84,7 @@ export default async function EntryPage({ params, searchParams }: { params: Prom
               <p>
                 {money(entry.paidAmountCents ?? entry.amountCents)} em {shortDate(entry.paidAt?.toISOString().slice(0, 10))}
                 {entry.method ? ` · ${labelOf(paymentMethods, entry.method)}` : ""}
+                {entry.account ? ` · ${entry.account}` : ""}
               </p>
               <ConfirmButton action={reopenEntry.bind(null, entry.id)} confirm="Desfazer a baixa deste lançamento?" className="adm-btn ghost small">
                 Desfazer baixa
@@ -200,6 +203,12 @@ export default async function EntryPage({ params, searchParams }: { params: Prom
                 <Input label="Data do pagamento" name="paidAt" type="date" defaultValue={today} />
                 <Input label="Valor pago (R$)" name="paidAmount" inputMode="decimal" defaultValue={moneyInput(entry.amountCents)} />
                 <Select label="Forma de pagamento" name="method" options={paymentMethods} defaultValue={entry.method ?? "pix"} />
+                <Input
+                  label={isIncome ? "Conta onde caiu o dinheiro" : "Conta / cartão usado"}
+                  name="account"
+                  defaultValue={entry.account ?? (entry.asaasPaymentId ? "Asaas" : "")}
+                  placeholder={isIncome ? "Ex.: Asaas, Nubank PJ" : "Ex.: Cartão Nubank final 1234"}
+                />
                 <label className="adm-field">
                   <span className="adm-label">Comprovante (opcional)</span>
                   <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.webp" />
@@ -222,8 +231,22 @@ export default async function EntryPage({ params, searchParams }: { params: Prom
           <section className="adm-card">
             <h2>Detalhes</h2>
             <dl className="adm-dl">
-              <dt>Categoria</dt>
+              <dt>{isIncome ? "Tipo de cobrança" : "Tipo"}</dt>
               <dd>{entry.category}</dd>
+              {entry.expense && (
+                <>
+                  <dt>Despesa</dt>
+                  <dd>
+                    <Link href={`/admin/financeiro/despesas/${entry.expense.id}`}>{entry.expense.name}</Link> ({entry.expense.frequency})
+                  </dd>
+                </>
+              )}
+              {entry.account && (
+                <>
+                  <dt>Conta</dt>
+                  <dd>{entry.account}</dd>
+                </>
+              )}
               {isIncome ? (
                 <>
                   <dt>Cliente</dt>

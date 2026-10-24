@@ -7,6 +7,7 @@ import { money, shortDate } from "@/lib/admin/format";
 import { parseMonth } from "@/lib/admin/month";
 import { asaasConfigured, asaasEnvironment } from "@/lib/integrations/asaas";
 import { emailConfigured, emailProvider } from "@/lib/integrations/email";
+import { syncRecurringExpenses } from "@/lib/finance/expenses";
 
 export const metadata = { title: "Financeiro" };
 
@@ -19,6 +20,7 @@ function utcMonth(key: string, offset = 0) {
 
 export default async function FinancePage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
   await requireUser();
+  await syncRecurringExpenses();
   const month = parseMonth((await searchParams).mes);
   const start = utcMonth(month.key);
   const end = utcMonth(month.key, 1);
@@ -79,6 +81,12 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         subtitle="Recebimentos, pagamentos e o resultado do mês."
         actions={
           <>
+            <Link href="/admin/financeiro/cobrancas/nova" className="adm-btn">
+              + Cobrança
+            </Link>
+            <Link href="/admin/financeiro/despesas/nova" className="adm-btn ghost">
+              + Despesa
+            </Link>
             <nav className="adm-month" aria-label="Mês">
               <Link href={`/admin/financeiro?mes=${month.prev}`} aria-label="Mês anterior">
                 ←
@@ -112,7 +120,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
           <strong className={result < 0 ? "neg" : ""}>{money(result)}</strong>
           <small>Recebido − pago</small>
         </div>
-        <Link href="/admin/financeiro/receber?situacao=vencidos" className="adm-kpi kpi-novo">
+        <Link href="/admin/financeiro/cobrancas?situacao=vencidos" className="adm-kpi kpi-novo">
           <span>Recebimentos vencidos</span>
           <strong>{money(late("receber")?._sum.amountCents ?? 0)}</strong>
           <small>{late("receber")?._count._all ?? 0} cobrança(s) em atraso</small>
@@ -202,7 +210,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         <section className="adm-card">
           <div className="adm-card-head">
             <h2>A receber nos próximos 30 dias</h2>
-            <Link href="/admin/financeiro/receber">Ver todos →</Link>
+            <Link href="/admin/financeiro/cobrancas">Ver todas →</Link>
           </div>
           {upcomingIn.length === 0 ? (
             <Empty title="Nada a receber nos próximos 30 dias" />

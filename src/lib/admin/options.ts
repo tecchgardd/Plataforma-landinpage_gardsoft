@@ -94,24 +94,49 @@ export function values<T extends readonly Option[]>(options: T) {
   return options.map((o) => o.value) as unknown as [T[number]["value"], ...T[number]["value"][]];
 }
 
-/** Categorias financeiras. */
+/** O que está sendo cobrado (vira a categoria da conta a receber). */
 export const incomeCategories = ["Projetos", "Manutenção", "Hospedagem", "Consultoria", "Outros"] as const;
-export const expenseCategories = [
-  "Ferramentas e softwares",
-  "Hospedagem e domínios",
-  "Marketing e anúncios",
-  "Freelancers",
-  "Impostos",
-  "Contabilidade",
-  "Pró-labore",
-  "Equipamentos",
-  "Outros",
+
+/** Tipos de despesa, agrupados. O rótulo vira a categoria da conta a pagar. */
+export const expenseTypes = [
+  { value: "software", label: "Ferramenta / software (SaaS)", group: "Softwares e ferramentas", hint: "Notion, Canva, Trello" },
+  { value: "ia", label: "Inteligência artificial (IA)", group: "Softwares e ferramentas", hint: "Claude, ChatGPT, Midjourney" },
+  { value: "design", label: "Design e criação", group: "Softwares e ferramentas", hint: "Figma, Adobe, banco de imagens" },
+  { value: "dev", label: "Desenvolvimento e APIs", group: "Softwares e ferramentas", hint: "GitHub, APIs pagas, licenças" },
+  { value: "produtividade", label: "Produtividade e comunicação", group: "Softwares e ferramentas", hint: "Google Workspace, Slack, Zoom" },
+  { value: "hospedagem", label: "Hospedagem de sites", group: "Infraestrutura", hint: "Vercel, Hostinger, Netlify" },
+  { value: "servidor", label: "Servidor / VPS / cloud", group: "Infraestrutura", hint: "AWS, DigitalOcean, Hetzner" },
+  { value: "banco", label: "Banco de dados", group: "Infraestrutura", hint: "Neon, Supabase, PlanetScale" },
+  { value: "dominio", label: "Domínio", group: "Infraestrutura", hint: "Registro.br, GoDaddy" },
+  { value: "email", label: "E-mail e envio", group: "Infraestrutura", hint: "Resend, e-mail profissional" },
+  { value: "armazenamento", label: "Armazenamento / CDN", group: "Infraestrutura", hint: "Cloudinary, S3, Cloudflare" },
+  { value: "anuncios", label: "Anúncios / tráfego pago", group: "Marketing", hint: "Meta Ads, Google Ads" },
+  { value: "impressos", label: "Material gráfico e impressos", group: "Marketing", hint: "Panfletos, cartões, banners" },
+  { value: "marketing", label: "Marketing (outros)", group: "Marketing", hint: "Agência, influenciador, eventos" },
+  { value: "freelancer", label: "Freelancer / terceirizado", group: "Pessoas", hint: "Designer, dev, redator" },
+  { value: "prolabore", label: "Pró-labore", group: "Pessoas" },
+  { value: "salarios", label: "Salários e benefícios", group: "Pessoas" },
+  { value: "contabilidade", label: "Contabilidade", group: "Administrativo" },
+  { value: "impostos", label: "Impostos e taxas do governo", group: "Administrativo", hint: "DAS, ISS, alvará" },
+  { value: "tarifas", label: "Tarifas bancárias e de gateway", group: "Administrativo", hint: "Asaas, banco, maquininha" },
+  { value: "internet", label: "Internet e telefone", group: "Administrativo" },
+  { value: "escritorio", label: "Aluguel / coworking", group: "Administrativo" },
+  { value: "equipamentos", label: "Equipamentos", group: "Administrativo", hint: "Computador, monitor, periféricos" },
+  { value: "cursos", label: "Cursos e capacitação", group: "Administrativo" },
+  { value: "outros", label: "Outros", group: "Administrativo" },
+] as const;
+
+export const expenseFrequencies = [
+  { value: "mensal", label: "Mensal (todo mês)" },
+  { value: "anual", label: "Anual (uma vez por ano)" },
+  { value: "unica", label: "Única (só uma vez)" },
 ] as const;
 
 export const paymentMethods = [
   { value: "boleto", label: "Boleto" },
   { value: "pix", label: "Pix" },
-  { value: "cartao", label: "Cartão" },
+  { value: "cartao", label: "Cartão de crédito" },
+  { value: "debito", label: "Débito / débito automático" },
   { value: "transferencia", label: "Transferência" },
   { value: "dinheiro", label: "Dinheiro" },
 ] as const;

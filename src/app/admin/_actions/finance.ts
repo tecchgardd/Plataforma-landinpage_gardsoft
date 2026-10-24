@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { prisma, toDbDate } from "@/lib/prisma";
+import { prisma, toDbDate, type Prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { logActivity } from "@/lib/activity";
 import { readUpload } from "@/lib/files";
@@ -36,13 +36,19 @@ const entrySchema = z.object({
   clientId: optionalUuid,
   projectId: optionalUuid,
   supplier: optionalText(120),
+  account: optionalText(80),
   notes: optionalText(4000),
   repeat: z
     .string()
     .optional()
     .transform((v) => Math.min(60, Math.max(1, Number(v) || 1))),
   repeatMode: z.enum(["parcelas", "mensal"]).optional(),
+  autoCharge: z.string().optional(),
+  autoEmail: z.string().optional(),
 });
+
+/** Lista onde o lançamento aparece: cobranças (a receber) ou contas a pagar. */
+const listOf = (type: string) => (type === "receber" ? "/admin/financeiro/cobrancas" : "/admin/financeiro/pagar");
 
 function addMonths(iso: string, months: number) {
   const [y, m, d] = iso.split("-").map(Number);
@@ -55,10 +61,10 @@ function addMonths(iso: string, months: number) {
 export async function saveEntry(id: string | null, _: FormState, formData: FormData): Promise<FormState> {
   const user = await requireUser();
   // Receitas não têm "fornecedor" e despesas não têm "cliente" no formulário.
-  const parsed = entrySchema.safeParse({ clientId: "", supplier: "", projectId: "", method: "", notes: "", ...formObject(formData) });
+  const parsed = entrySchema.safeParse({ clientId: "", supplier: "", projectId: "", method: "", account: "", notes: "", ...formObject(formData) });
   if (!parsed.success) return { error: firstError(parsed.error) };
-  const { amount, dueDate, repeat, repeatMode, ...data } = parsed.data;
-  const label = data.type === "receber" ? "conta a receber" : "conta a pagar";
+  const { amount, dueDate, repeat, repeatMode, autoCharge, autoEmail, ...data } = parsed.data;
+  const label = data.type === "receber" ? "cobrança" : "conta a pagar";
 
   if (id) {
     const current = await prisma.financeEntry.findUnique({ where: { id }, select: { asaasPaymentId: true, status: true } });
@@ -93,8 +99,19 @@ export async function saveEntry(id: string | null, _: FormState, formData: FormD
     ids.push(entry.id);
   }
   await logActivity(user, "criou", "financeiro", `Lançou ${label}: ${data.description} (${money(amount)}${count > 1 ? `, ${count}x` : ""})`, ids[0]);
+
+  // Cobrança nova: já gera boleto/Pix (do 1º vencimento) e envia por e-mail, se marcado.
+  let notice = "";
+  if (data.type === "receber" && autoCharge) {
+    try {
+      await createAsaasCharge(ids[0]);
+      if (autoEmail) await emailCharge(ids[0]);
+    } catch (e) {
+      notice = `?aviso=${encodeURIComponent(errorText(e))}`;
+    }
+  }
   refresh();
-  redirect(count > 1 ? `/admin/financeiro/${data.type}` : `/admin/financeiro/lancamento/${ids[0]}`);
+  redirect(count > 1 ? `${listOf(data.type)}${notice}` : `/admin/financeiro/lancamento/${ids[0]}${notice}`);
 }
 
 /** Baixa manual com comprovante opcional. */
@@ -104,6 +121,7 @@ export async function payEntry(id: string, _: FormState, formData: FormData): Pr
   const paidAt = /^\d{4}-\d{2}-\d{2}$/.test(form.paidAt ?? "") ? form.paidAt : undefined;
   const paidAmountCents = form.paidAmount ? parseMoney(form.paidAmount) : undefined;
   const method = paymentMethods.find((m) => m.value === form.method)?.value ?? null;
+  const account = form.account?.slice(0, 80) || null;
   const file = formData.get("file");
   if (file instanceof File && file.size > 0) {
     const upload = await readUpload(formData);
@@ -111,7 +129,7 @@ export async function payEntry(id: string, _: FormState, formData: FormData): Pr
     await prisma.financeFile.create({ data: { entryId: id, kind: "comprovante", label: "Comprovante de pagamento", ...upload } });
   }
   try {
-    const entry = await markEntryPaid(id, { paidAt, paidAmountCents, method, source: "manual" });
+    const entry = await markEntryPaid(id, { paidAt, paidAmountCents, method, account, source: "manual" });
     await logActivity(user, "deu baixa", "financeiro", `Deu baixa em ${entry.description} (${money(entry.paidAmountCents ?? entry.amountCents)})`, id);
   } catch (e) {
     return { error: errorText(e) };
@@ -156,7 +174,7 @@ export async function deleteEntry(id: string) {
   await prisma.financeEntry.delete({ where: { id } });
   await logActivity(user, "excluiu", "financeiro", `Excluiu o lançamento ${entry.description}`, id);
   refresh();
-  redirect(`/admin/financeiro/${entry.type}`);
+  redirect(listOf(entry.type));
 }
 
 /* ---------- Asaas ---------- */
@@ -239,4 +257,89 @@ export async function deleteEntryFile(fileId: string) {
   await requireUser();
   await prisma.financeFile.deleteMany({ where: { id: fileId } });
   refresh();
+}
+
+/* ---------- ações em lote (seleção nas tabelas) ---------- */
+
+export type BulkAction = "baixa" | "reabrir" | "cancelar" | "excluir" | "cobrar" | "email" | "editar";
+export type BulkInput = { paidAt?: string; method?: string; account?: string; dueDate?: string; category?: string };
+
+export async function bulkEntries(action: BulkAction, ids: string[], input: BulkInput = {}): Promise<FormState> {
+  const user = await requireUser();
+  const valid = ids.filter((id) => z.uuid().safeParse(id).success).slice(0, 500);
+  if (valid.length === 0) return { error: "Nenhum lançamento selecionado." };
+  const entries = await prisma.financeEntry.findMany({
+    where: { id: { in: valid } },
+    select: { id: true, description: true, status: true, type: true, asaasPaymentId: true },
+  });
+  const method = paymentMethods.find((m) => m.value === input.method)?.value;
+  const date = (v?: string) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : undefined);
+  const account = input.account?.trim().slice(0, 80) || null;
+  let done = 0;
+  const failures: string[] = [];
+
+  for (const entry of entries) {
+    try {
+      switch (action) {
+        case "baixa":
+          if (entry.status !== "pendente") continue;
+          await markEntryPaid(entry.id, { paidAt: date(input.paidAt), method: method ?? null, account, source: "manual" });
+          break;
+        case "reabrir":
+          if (entry.status !== "pago") continue;
+          await prisma.financeEntry.update({ where: { id: entry.id }, data: { status: "pendente", paidAt: null, paidAmountCents: null } });
+          break;
+        case "cancelar":
+          if (entry.status !== "pendente") continue;
+          if (entry.asaasPaymentId) await deletePayment(entry.asaasPaymentId);
+          await prisma.financeEntry.update({ where: { id: entry.id }, data: { status: "cancelado", asaasStatus: entry.asaasPaymentId ? "DELETED" : null } });
+          break;
+        case "excluir":
+          if (entry.asaasPaymentId && entry.status === "pendente") throw new Error("tem cobrança ativa no Asaas (cancele antes)");
+          await prisma.financeEntry.delete({ where: { id: entry.id } });
+          break;
+        case "cobrar":
+          if (entry.type !== "receber" || entry.status !== "pendente" || entry.asaasPaymentId) continue;
+          await createAsaasCharge(entry.id);
+          break;
+        case "email":
+          if (entry.type !== "receber" || entry.status !== "pendente") continue;
+          await emailCharge(entry.id);
+          break;
+        case "editar": {
+          const data: Prisma.FinanceEntryUpdateInput = {};
+          if (date(input.dueDate)) {
+            if (entry.asaasPaymentId && entry.status === "pendente") throw new Error("tem cobrança no Asaas; o vencimento não pode mudar");
+            data.dueDate = toDbDate(date(input.dueDate)!)!;
+          }
+          if (method) data.method = method;
+          if (account) data.account = account;
+          if (input.category?.trim()) data.category = input.category.trim().slice(0, 60);
+          if (Object.keys(data).length === 0) return { error: "Preencha ao menos um campo para alterar." };
+          await prisma.financeEntry.update({ where: { id: entry.id }, data });
+          break;
+        }
+      }
+      done++;
+    } catch (e) {
+      failures.push(`${entry.description}: ${errorText(e)}`);
+    }
+  }
+
+  const verbs: Record<BulkAction, [string, string]> = {
+    baixa: ["deu baixa", "baixado(s)"],
+    reabrir: ["reabriu", "reaberto(s)"],
+    cancelar: ["cancelou", "cancelado(s)"],
+    excluir: ["excluiu", "excluído(s)"],
+    cobrar: ["cobrou", "com boleto/Pix gerado"],
+    email: ["enviou", "enviado(s) por e-mail"],
+    editar: ["editou", "alterado(s)"],
+  };
+  if (done > 0) await logActivity(user, verbs[action][0], "financeiro", `Ação em lote: ${verbs[action][0]} em ${done} lançamento(s)`);
+  refresh();
+  const skipped = entries.length - done - failures.length;
+  const parts = [`${done} lançamento(s) ${verbs[action][1]}.`];
+  if (skipped > 0) parts.push(`${skipped} ignorado(s) por não se aplicar.`);
+  if (failures.length > 0) return { error: [...parts, `Falharam: ${failures.slice(0, 3).join("; ")}${failures.length > 3 ? "…" : ""}`].join(" ") };
+  return { success: parts.join(" ") };
 }

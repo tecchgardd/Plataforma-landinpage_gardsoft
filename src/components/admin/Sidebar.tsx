@@ -27,9 +27,10 @@ export const links: NavItem[] = [
         icon: "M3 7h18v12H3zM3 11h18M7 15h3M16 3v4M8 3v4",
         children: [
           { href: "/admin/financeiro", label: "Visão geral" },
-          { href: "/admin/financeiro/receber", label: "Contas a receber" },
+          { href: "/admin/financeiro/cobrancas", label: "Cobranças" },
+          { href: "/admin/financeiro/recebimentos", label: "Recebimentos" },
           { href: "/admin/financeiro/pagar", label: "Contas a pagar" },
-          { href: "/admin/financeiro/receitas-despesas", label: "Receitas e despesas" },
+          { href: "/admin/financeiro/despesas", label: "Despesas" },
         ],
       },
       { href: "/admin/notas-fiscais", label: "Notas fiscais", icon: "M4 4h16v16H4zM8 8h8M8 12h8M8 16h5" },

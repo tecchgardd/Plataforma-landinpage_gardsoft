@@ -29,7 +29,7 @@ const createActions: { href: string; label: string; icon: string }[] = [
   { href: "/admin/projetos/novo", label: "Projeto", icon: iconOf("/admin/projetos") },
   { href: "/admin/orcamentos/novo", label: "Orçamento", icon: iconOf("/admin/orcamentos") },
   { href: "/admin/contratos/novo", label: "Contrato", icon: iconOf("/admin/contratos") },
-  { href: "/admin/financeiro/lancamento/novo", label: "Lançamento", icon: "M3 7h18v12H3zM3 11h18M7 15h3" },
+  { href: "/admin/financeiro/cobrancas/nova", label: "Cobrança", icon: "M3 7h18v12H3zM3 11h18M7 15h3" },
   { href: "/admin/notas-fiscais/nova", label: "Nota fiscal", icon: iconOf("/admin/notas-fiscais") },
   { href: "/admin/campanhas/novo", label: "Campanha", icon: iconOf("/admin/campanhas") },
 ];

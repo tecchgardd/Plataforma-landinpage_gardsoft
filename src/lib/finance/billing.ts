@@ -120,7 +120,7 @@ export async function emailCharge(entryId: string) {
 /** Baixa do pagamento (manual ou pelo webhook) e, se configurado, emissão da nota. */
 export async function markEntryPaid(
   entryId: string,
-  input: { paidAt?: string; paidAmountCents?: number; method?: string | null; source: string },
+  input: { paidAt?: string; paidAmountCents?: number; method?: string | null; account?: string | null; source: string },
 ) {
   const entry = await prisma.financeEntry.findUniqueOrThrow({ where: { id: entryId }, include: { client: true, invoice: { select: { id: true } } } });
   if (entry.status === "pago") return entry;
@@ -131,6 +131,7 @@ export async function markEntryPaid(
       paidAt: dateOnly(input.paidAt ?? todayIso()),
       paidAmountCents: input.paidAmountCents ?? entry.amountCents,
       method: input.method ?? entry.method,
+      account: input.account ?? entry.account ?? (input.source === "Asaas" ? "Asaas" : null),
     },
   });
   if (entry.type === "receber") {

@@ -425,10 +425,16 @@ model FinanceEntry {
   files             FinanceFile[]
   /// Nota fiscal do recebimento (emitida pelo Asaas ou lançada à mão)
   invoice           Invoice?
+  /// Despesa cadastrada que gerou esta conta a pagar (recorrências)
+  expenseId         String?       @map("expense_id") @db.Uuid
+  expense           Expense?      @relation(fields: [expenseId], references: [id], onDelete: SetNull)
+  /// Para onde foi o dinheiro recebido / de onde saiu o pagamento (ex.: Asaas, Nubank PJ)
+  account           String?
 
   @@index([type, status, dueDate])
   @@index([clientId])
   @@index([contractId])
+  @@index([expenseId])
   @@map("finance_entries")
 }
 
@@ -555,4 +561,37 @@ model WebhookEvent {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("webhook_events")
+}
+
+/// Despesa cadastrada (assinatura, ferramenta, servidor...). As recorrentes geram as contas a pagar de cada mês/ano.
+model Expense {
+  id             String         @id @default(uuid()) @db.Uuid
+  name           String
+  /// chave de expenseTypes (ex.: software, ia, hospedagem, servidor)
+  kind           String
+  supplier       String?
+  amountCents    Int            @map("amount_cents")
+  /// unica | mensal | anual
+  frequency      String
+  /// Dia do vencimento (1–31). No anual, junto com dueMonth.
+  dueDay         Int?           @map("due_day")
+  dueMonth       Int?           @map("due_month")
+  /// Primeiro vencimento
+  startDate      DateTime       @map("start_date") @db.Date
+  /// Último vencimento (opcional; sem data, repete até encerrar)
+  endDate        DateTime?      @map("end_date") @db.Date
+  /// Último vencimento já gerado em contas a pagar
+  generatedUntil DateTime?      @map("generated_until") @db.Date
+  active         Boolean        @default(true)
+  method         String?
+  /// Conta ou cartão de onde sai o pagamento
+  account        String?
+  url            String?
+  notes          String?
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at")
+  entries        FinanceEntry[]
+
+  @@index([active, frequency])
+  @@map("expenses")
 }
