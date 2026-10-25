@@ -1,0 +1,22 @@
+import { z } from "zod";
+import { getAccess } from "@/lib/access";
+import { documentPdf } from "@/lib/documents-server";
+
+/** PDF do documento para a equipe (qualquer situação, inclusive rascunho). */
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const access = await getAccess();
+  if (!access) return new Response("Unauthorized", { status: 401 });
+  if (access.level("documentos") < 1) return new Response("Forbidden", { status: 403 });
+  const { id } = await params;
+  if (!z.uuid().safeParse(id).success) return new Response("Not found", { status: 404 });
+  const pdf = await documentPdf({ id });
+  if (!pdf) return new Response("Not found", { status: 404 });
+  const download = new URL(request.url).searchParams.has("baixar");
+  return new Response(new Uint8Array(pdf.buffer), {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `${download ? "attachment" : "inline"}; filename="${pdf.filename}"`,
+      "Cache-Control": "private, no-store",
+    },
+  });
+}

@@ -2,7 +2,7 @@ import Link from "next/link";
 import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import { QuoteBadge } from "@/components/admin/Badges";
 import { prisma, type Prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { dateTime, money, shortDate } from "@/lib/admin/format";
 import { quoteStatuses } from "@/lib/admin/options";
 
@@ -15,7 +15,7 @@ const views = [
 ] as const;
 
 export default async function QuotesPage({ searchParams }: { searchParams: Promise<{ status?: string; q?: string }> }) {
-  await requireUser();
+  await requireAccess("orcamentos", 1);
   const sp = await searchParams;
   const view = views.find((v) => v.value === sp.status)?.value;
   const today = new Date(`${new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)}T00:00:00Z`);

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma, toDbDate, type Prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { logActivity } from "@/lib/activity";
 import { readUpload } from "@/lib/files";
 import { parseMoney } from "@/lib/admin/format";
@@ -59,7 +59,7 @@ function addMonths(iso: string, months: number) {
 }
 
 export async function saveEntry(id: string | null, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("financeiro", 2);
   // Receitas não têm "fornecedor" e despesas não têm "cliente" no formulário.
   const parsed = entrySchema.safeParse({ clientId: "", supplier: "", projectId: "", method: "", account: "", notes: "", ...formObject(formData) });
   if (!parsed.success) return { error: firstError(parsed.error) };
@@ -116,7 +116,7 @@ export async function saveEntry(id: string | null, _: FormState, formData: FormD
 
 /** Baixa manual com comprovante opcional. */
 export async function payEntry(id: string, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("financeiro", 2);
   const form = formObject(formData);
   const paidAt = /^\d{4}-\d{2}-\d{2}$/.test(form.paidAt ?? "") ? form.paidAt : undefined;
   const paidAmountCents = form.paidAmount ? parseMoney(form.paidAmount) : undefined;
@@ -139,7 +139,7 @@ export async function payEntry(id: string, _: FormState, formData: FormData): Pr
 }
 
 export async function reopenEntry(id: string) {
-  const user = await requireUser();
+  const user = await requireAccess("financeiro", 2);
   const entry = await prisma.financeEntry.update({
     where: { id },
     data: { status: "pendente", paidAt: null, paidAmountCents: null },
@@ -150,7 +150,7 @@ export async function reopenEntry(id: string) {
 }
 
 export async function cancelEntry(id: string, _: FormState): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("financeiro", 2);
   const entry = await prisma.financeEntry.findUnique({ where: { id } });
   if (!entry) return { error: "Lançamento não encontrado." };
   if (entry.asaasPaymentId && entry.status === "pendente") {
@@ -167,7 +167,7 @@ export async function cancelEntry(id: string, _: FormState): Promise<FormState> 
 }
 
 export async function deleteEntry(id: string) {
-  const user = await requireUser();
+  const user = await requireAccess("financeiro", 3);
   const entry = await prisma.financeEntry.findUnique({ where: { id }, select: { description: true, type: true, asaasPaymentId: true, status: true } });
   if (!entry) redirect("/admin/financeiro");
   if (entry.asaasPaymentId && entry.status === "pendente") redirect(`/admin/financeiro/lancamento/${id}?erro=asaas`);
@@ -180,7 +180,7 @@ export async function deleteEntry(id: string) {
 /* ---------- Asaas ---------- */
 
 export async function chargeEntry(id: string, _: FormState): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("financeiro", 2);
   try {
     const entry = await createAsaasCharge(id);
     await logActivity(user, "cobrou", "financeiro", `Gerou boleto/Pix no Asaas: ${entry.description}`, id);
@@ -192,7 +192,7 @@ export async function chargeEntry(id: string, _: FormState): Promise<FormState> 
 }
 
 export async function emailEntry(id: string, _: FormState): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("financeiro", 2);
   try {
     await emailCharge(id);
   } catch (e) {
@@ -204,7 +204,7 @@ export async function emailEntry(id: string, _: FormState): Promise<FormState> {
 }
 
 export async function invoiceEntry(id: string, _: FormState): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("notas", 2);
   try {
     const invoice = await issueEntryInvoice(id);
     await logActivity(user, "emitiu", "notafiscal", `Solicitou a nota fiscal de ${invoice.description}`, invoice.id);
@@ -217,7 +217,7 @@ export async function invoiceEntry(id: string, _: FormState): Promise<FormState>
 
 /** Atualiza status da cobrança e da nota direto do Asaas (caso algum aviso não tenha chegado). */
 export async function syncEntry(id: string, _: FormState): Promise<FormState> {
-  await requireUser();
+  await requireAccess("financeiro", 2);
   const entry = await prisma.financeEntry.findUnique({ where: { id }, include: { invoice: { select: { id: true, asaasInvoiceId: true } } } });
   if (!entry?.asaasPaymentId) return { error: "Este lançamento não tem cobrança no Asaas." };
   try {
@@ -242,7 +242,7 @@ export async function syncEntry(id: string, _: FormState): Promise<FormState> {
 /* ---------- anexos ---------- */
 
 export async function uploadEntryFile(entryId: string, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("financeiro", 2);
   const file = await readUpload(formData);
   if ("error" in file) return { error: file.error };
   const label = String(formData.get("label") ?? "").trim().slice(0, 80) || null;
@@ -254,7 +254,7 @@ export async function uploadEntryFile(entryId: string, _: FormState, formData: F
 }
 
 export async function deleteEntryFile(fileId: string) {
-  await requireUser();
+  await requireAccess("financeiro", 2);
   await prisma.financeFile.deleteMany({ where: { id: fileId } });
   refresh();
 }
@@ -265,7 +265,7 @@ export type BulkAction = "baixa" | "reabrir" | "cancelar" | "excluir" | "cobrar"
 export type BulkInput = { paidAt?: string; method?: string; account?: string; dueDate?: string; category?: string };
 
 export async function bulkEntries(action: BulkAction, ids: string[], input: BulkInput = {}): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("financeiro", action === "excluir" ? 3 : 2);
   const valid = ids.filter((id) => z.uuid().safeParse(id).success).slice(0, 500);
   if (valid.length === 0) return { error: "Nenhum lançamento selecionado." };
   const entries = await prisma.financeEntry.findMany({

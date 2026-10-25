@@ -1,7 +1,7 @@
 import ActionForm from "@/components/admin/ActionForm";
 import PageHeader from "@/components/admin/PageHeader";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { getFinanceSettings } from "@/lib/finance/settings";
 import { saveQuote } from "../../../_actions/quotes";
 import QuoteFields from "../QuoteFields";
@@ -12,7 +12,7 @@ export const metadata = { title: "Novo orçamento" };
 const uuid = (v?: string) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v : null);
 
 export default async function NewQuotePage({ searchParams }: { searchParams: Promise<{ cliente?: string; lead?: string; projeto?: string }> }) {
-  await requireUser();
+  await requireAccess("orcamentos", 2);
   const sp = await searchParams;
   const [options, settings, lead, project] = await Promise.all([
     quoteOptions(uuid(sp.lead)),

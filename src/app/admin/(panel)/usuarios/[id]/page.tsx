@@ -5,7 +5,8 @@ import { Input } from "@/components/admin/Fields";
 import PageHeader from "@/components/admin/PageHeader";
 import UserFields from "@/components/admin/UserFields";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { getAccess, requireAccess } from "@/lib/access";
+import { SUPER_ADMIN } from "@/lib/permissions";
 import { dateTime } from "@/lib/admin/format";
 import { deleteUser, resetUserPassword, updateUser } from "../../../_actions/account";
 
@@ -14,6 +15,7 @@ export const metadata = { title: "Editar usuário" };
 const errors: Record<string, string> = {
   proprio: "Você não pode excluir o próprio acesso.",
   ultimo: "Não é possível excluir o último usuário do portal.",
+  "ultimo-admin": "Este é o último super admin. Promova outra pessoa antes de excluir.",
 };
 
 export default async function EditUserPage({
@@ -23,17 +25,24 @@ export default async function EditUserPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ erro?: string }>;
 }) {
-  const me = await requireUser();
+  const me = await requireAccess("usuarios", 1);
+  const access = (await getAccess())!;
   const [{ id }, { erro }] = await Promise.all([params, searchParams]);
-  const [user, total, recent] = await Promise.all([
+  const [user, total, recent, roles] = await Promise.all([
     prisma.user.findUnique({
       where: { id },
-      select: { id: true, name: true, username: true, email: true, phone: true, jobTitle: true, image: true },
+      select: { id: true, name: true, username: true, email: true, phone: true, jobTitle: true, image: true, roleId: true, role: { select: { key: true } } },
     }),
     prisma.user.count(),
     prisma.activityLog.findMany({ where: { userId: id }, orderBy: { createdAt: "desc" }, take: 8 }),
+    prisma.role.findMany({ select: { id: true, name: true, key: true }, orderBy: { createdAt: "asc" } }),
   ]);
   if (!user) notFound();
+  // Quem não é super admin não vê a opção (nem mexe em quem já é super admin).
+  const lockRole = user.id === me.id || (!access.isSuperAdmin && user.role?.key === SUPER_ADMIN);
+  const roleOptions = access.isSuperAdmin || lockRole ? roles : roles.filter((r) => r.key !== SUPER_ADMIN);
+  const canEdit = access.level("usuarios") >= 2;
+  const canDelete = access.level("usuarios") >= 3;
 
   return (
     <>
@@ -46,21 +55,27 @@ export default async function EditUserPage({
       <div className="adm-detail">
         <section className="adm-card">
           <h2>Dados do colaborador</h2>
-          <ActionForm action={updateUser.bind(null, user.id)} submitLabel="Salvar alterações">
-            <UserFields user={user} />
-          </ActionForm>
+          {canEdit ? (
+            <ActionForm action={updateUser.bind(null, user.id)} submitLabel="Salvar alterações">
+              <UserFields user={user} roles={roleOptions} lockRole={lockRole} />
+            </ActionForm>
+          ) : (
+            <p className="adm-card-sub">Seu perfil só permite ver os usuários.</p>
+          )}
         </section>
         <aside className="adm-side">
-          <section className="adm-card">
-            <h2>Redefinir senha</h2>
-            <p className="adm-card-sub">
-              {user.id === me.id ? "Define uma nova senha para o seu acesso." : "O colaborador será desconectado e entra com a nova senha."}
-            </p>
-            <ActionForm action={resetUserPassword.bind(null, user.id)} submitLabel="Redefinir senha">
-              <Input label="Nova senha" name="password" type="password" required wide />
-              <Input label="Confirme" name="confirm" type="password" required wide />
-            </ActionForm>
-          </section>
+          {canEdit && (
+            <section className="adm-card">
+              <h2>Redefinir senha</h2>
+              <p className="adm-card-sub">
+                {user.id === me.id ? "Define uma nova senha para o seu acesso." : "O colaborador será desconectado e entra com a nova senha."}
+              </p>
+              <ActionForm action={resetUserPassword.bind(null, user.id)} submitLabel="Redefinir senha">
+                <Input label="Nova senha" name="password" type="password" required wide />
+                <Input label="Confirme" name="confirm" type="password" required wide />
+              </ActionForm>
+            </section>
+          )}
           <section className="adm-card">
             <div className="adm-card-head">
               <h2>Atividade recente</h2>
@@ -83,7 +98,7 @@ export default async function EditUserPage({
               </ul>
             )}
           </section>
-          {user.id !== me.id && total > 1 && (
+          {canDelete && user.id !== me.id && total > 1 && (
             <ConfirmButton
               action={deleteUser.bind(null, user.id)}
               confirm={`Excluir o acesso de ${user.name}? Os leads, clientes e projetos dele ficam sem responsável.`}

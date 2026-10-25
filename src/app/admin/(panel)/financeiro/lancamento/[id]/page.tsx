@@ -8,7 +8,7 @@ import Files from "@/components/admin/Files";
 import PageHeader from "@/components/admin/PageHeader";
 import { EntryBadge, InvoiceBadge } from "@/components/admin/Badges";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { money, moneyInput, shortDate } from "@/lib/admin/format";
 import { labelOf, paymentMethods } from "@/lib/admin/options";
 import { asaasConfigured } from "@/lib/integrations/asaas";
@@ -27,11 +27,12 @@ import {
   uploadEntryFile,
 } from "../../../../_actions/finance";
 import EntryFields from "../../EntryFields";
+import Can from "@/components/admin/Can";
 
 export const metadata = { title: "Lançamento" };
 
 export default async function EntryPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ erro?: string; aviso?: string }> }) {
-  await requireUser();
+  await requireAccess("financeiro", 1);
   const [{ id }, { erro, aviso }] = await Promise.all([params, searchParams]);
   if (!z.uuid().safeParse(id).success) notFound();
   const [entry, clients, projects] = await Promise.all([
@@ -286,9 +287,11 @@ export default async function EntryPage({ params, searchParams }: { params: Prom
               Cancelar lançamento
             </ActionButton>
           )}
-          <ConfirmButton action={deleteEntry.bind(null, entry.id)} confirm="Excluir este lançamento definitivamente?" className="adm-btn danger ghost">
-            Excluir
-          </ConfirmButton>
+          <Can module="financeiro" level={3}>
+            <ConfirmButton action={deleteEntry.bind(null, entry.id)} confirm="Excluir este lançamento definitivamente?" className="adm-btn danger ghost">
+              Excluir
+            </ConfirmButton>
+          </Can>
         </aside>
       </div>
     </>

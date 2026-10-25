@@ -6,7 +6,8 @@ import ActionForm, { ConfirmButton } from "@/components/admin/ActionForm";
 import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import { CampaignBadge, StatusBadge, TempBadge } from "@/components/admin/Badges";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { getAccess, requireAccess } from "@/lib/access";
+import AdsPanel from "./AdsPanel";
 import { dateTime, money } from "@/lib/admin/format";
 import { campaignChannels, costTypes, labelOf } from "@/lib/admin/options";
 import { deleteCampaign, saveCampaign } from "../../../_actions/campaigns";
@@ -17,7 +18,9 @@ import UtmLink from "./UtmLink";
 export const metadata = { title: "Campanha" };
 
 export default async function CampaignPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireUser();
+  await requireAccess("campanhas", 1);
+  const access = (await getAccess())!;
+  const canEdit = access.level("campanhas") >= 2;
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
   const [campaign, leads] = await Promise.all([
@@ -73,6 +76,8 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
         channels={campaign.channels.map((c) => ({ value: c, label: labelOf(campaignChannels, c) }))}
       />
 
+      <AdsPanel campaign={campaign} canEdit={canEdit} />
+
       {campaign.costs.length > 0 && (
         <section className="adm-card">
           <h2>Onde foi investido</h2>
@@ -97,9 +102,13 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
 
       <div className="adm-detail">
         <div className="adm-card">
-          <ActionForm action={saveCampaign.bind(null, campaign.id)} submitLabel="Salvar alterações">
-            <CampaignFields campaign={campaign} costs={campaign.costs} />
-          </ActionForm>
+          {canEdit ? (
+            <ActionForm action={saveCampaign.bind(null, campaign.id)} submitLabel="Salvar alterações">
+              <CampaignFields campaign={campaign} costs={campaign.costs} />
+            </ActionForm>
+          ) : (
+            <p className="adm-card-sub">Seu perfil só permite ver as campanhas.</p>
+          )}
         </div>
         <aside className="adm-side">
           <section className="adm-card">
@@ -125,13 +134,15 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
               </ul>
             )}
           </section>
-          <ConfirmButton
-            action={deleteCampaign.bind(null, campaign.id)}
-            confirm="Excluir esta campanha? Os leads continuam salvos, sem campanha vinculada."
-            className="adm-btn danger ghost"
-          >
-            Excluir campanha
-          </ConfirmButton>
+          {access.level("campanhas") >= 3 && (
+            <ConfirmButton
+              action={deleteCampaign.bind(null, campaign.id)}
+              confirm="Excluir esta campanha? Os leads continuam salvos, sem campanha vinculada."
+              className="adm-btn danger ghost"
+            >
+              Excluir campanha
+            </ConfirmButton>
+          )}
         </aside>
       </div>
     </>

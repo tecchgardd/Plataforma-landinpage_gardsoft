@@ -1,14 +1,14 @@
 import Link from "next/link";
 import PageHeader from "@/components/admin/PageHeader";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { dateTime } from "@/lib/admin/format";
 import { sections } from "./specs";
 
 export const metadata = { title: "Conteúdo do site" };
 
 export default async function ContentPage() {
-  await requireUser();
+  await requireAccess("conteudo", 1);
   const rows = await prisma.content.findMany({ select: { key: true, updatedAt: true } });
   const updated = Object.fromEntries(rows.map((r) => [r.key, r.updatedAt]));
 

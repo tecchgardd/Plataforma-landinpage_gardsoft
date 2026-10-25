@@ -3,7 +3,7 @@ import Link from "next/link";
 import ActionForm from "@/components/admin/ActionForm";
 import { Input, Select } from "@/components/admin/Fields";
 import PageHeader from "@/components/admin/PageHeader";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { getFinanceSettings } from "@/lib/finance/settings";
 import { asaasConfigured, asaasEnvironment } from "@/lib/integrations/asaas";
 import { emailConfigured, emailProvider } from "@/lib/integrations/email";
@@ -13,7 +13,7 @@ import { saveBillingSettings } from "../../../_actions/settings";
 export const metadata = { title: "Cobrança e integrações" };
 
 export default async function BillingSettingsPage() {
-  await requireUser();
+  await requireAccess("financeiro", 1);
   const { billing } = await getFinanceSettings();
   const h = await headers();
   const origin = process.env.BETTER_AUTH_URL ? siteUrl : `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;

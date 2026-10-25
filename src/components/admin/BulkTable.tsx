@@ -25,6 +25,8 @@ type Props = {
   hrefBase: string;
   categories?: string[];
   accounts?: string[];
+  /** Nível do perfil no módulo: 1 = só compartilhar/exportar, 2 = ações, 3 = também excluir. */
+  level?: number;
   /** Mostrado no lugar da tabela quando não há linhas (a barra continua, com o resultado da última ação). */
   empty?: ReactNode;
   children: ReactNode;
@@ -62,7 +64,8 @@ function toCsv(rows: BulkRow[]) {
   return "﻿" + [cols.map(cell).join(";"), ...rows.map((r) => cols.map((c) => cell(r.csv[c] ?? "")).join(";"))].join("\r\n");
 }
 
-export default function BulkTable({ scope, rows, actions, title, hrefBase, categories = [], accounts = [], empty, children }: Props) {
+export default function BulkTable({ scope, rows, actions: allActions, title, hrefBase, categories = [], accounts = [], level = 3, empty, children }: Props) {
+  const actions = allActions.filter((a) => (a === "excluir" ? level >= 3 : level >= 2));
   const router = useRouter();
   const all = useMemo(() => rows.map((r) => r.id), [rows]);
   const [selected, setSelected] = useState<Set<string>>(new Set());

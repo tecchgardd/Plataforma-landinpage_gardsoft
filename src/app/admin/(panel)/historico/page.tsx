@@ -2,7 +2,7 @@ import Link from "next/link";
 import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import Avatar from "@/components/admin/Avatar";
 import { prisma, type Prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 
 export const metadata = { title: "Histórico" };
 
@@ -15,12 +15,16 @@ const entities = [
   { value: "campanha", label: "Campanhas" },
   { value: "orcamento", label: "Orçamentos" },
   { value: "contrato", label: "Contratos" },
+  { value: "documento", label: "Documentos do projeto" },
   { value: "financeiro", label: "Financeiro" },
   { value: "notafiscal", label: "Notas fiscais" },
   { value: "comercial", label: "Configurações comerciais" },
   { value: "conteudo", label: "Conteúdo do site" },
   { value: "usuario", label: "Usuários" },
   { value: "perfil", label: "Perfil" },
+  { value: "acesso", label: "Perfis de acesso" },
+  { value: "meta", label: "Metas (BI)" },
+  { value: "integracao", label: "Integrações" },
 ];
 
 const actionIcon: Record<string, string> = {
@@ -66,6 +70,10 @@ function entityHref(entity: string, id: string | null) {
       return `/admin/orcamentos/${id}`;
     case "contrato":
       return `/admin/contratos/${id}`;
+    case "documento":
+      return `/admin/documentos/${id}`;
+    case "acesso":
+      return `/admin/perfis/${id}`;
     case "notafiscal":
       return `/admin/notas-fiscais/${id}`;
     case "financeiro":
@@ -84,7 +92,7 @@ const sentence = (summary: string) => summary.charAt(0).toLowerCase() + summary.
 type Search = { modulo?: string; usuario?: string; pagina?: string };
 
 export default async function HistoryPage({ searchParams }: { searchParams: Promise<Search> }) {
-  await requireUser();
+  await requireAccess("historico", 1);
   const params = await searchParams;
   const page = Math.max(1, Number(params.pagina) || 1);
   const where: Prisma.ActivityLogWhereInput = {};

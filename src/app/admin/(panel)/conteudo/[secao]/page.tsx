@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import PageHeader from "@/components/admin/PageHeader";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { getContent } from "@/lib/content";
 import ContentEditor from "../ContentEditor";
 import { sections } from "../specs";
@@ -10,7 +10,7 @@ import SectionSwitcher from "../SectionSwitcher";
 export const metadata = { title: "Editar conteúdo" };
 
 export default async function SectionPage({ params }: { params: Promise<{ secao: string }> }) {
-  await requireUser();
+  await requireAccess("conteudo", 1);
   const { secao } = await params;
   const section = sections.find((s) => s.key === secao);
   if (!section) notFound();

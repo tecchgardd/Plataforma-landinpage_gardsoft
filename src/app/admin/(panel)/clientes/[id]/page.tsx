@@ -8,10 +8,11 @@ import { Owner } from "@/components/admin/Avatar";
 import Files from "@/components/admin/Files";
 import { prisma } from "@/lib/prisma";
 import { getTeam } from "@/lib/activity";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { money, phoneLink, shortDate } from "@/lib/admin/format";
 import { deleteClient, deleteClientFile, saveClient, uploadClientFile } from "../../../_actions/clients";
 import ClientFields from "../ClientFields";
+import Can from "@/components/admin/Can";
 
 export const metadata = { title: "Cliente" };
 
@@ -25,7 +26,7 @@ const fileSuggestions = [
 ];
 
 export default async function ClientPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireUser();
+  await requireAccess("clientes", 1);
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
   const [client, team] = await Promise.all([
@@ -135,13 +136,15 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
               </ul>
             </section>
           )}
-          <ConfirmButton
-            action={deleteClient.bind(null, client.id)}
-            confirm="Excluir este cliente e os documentos anexados? Os projetos continuam salvos, sem cliente vinculado."
-            className="adm-btn danger ghost"
-          >
-            Excluir cliente
-          </ConfirmButton>
+          <Can module="clientes" level={3}>
+            <ConfirmButton
+              action={deleteClient.bind(null, client.id)}
+              confirm="Excluir este cliente e os documentos anexados? Os projetos continuam salvos, sem cliente vinculado."
+              className="adm-btn danger ghost"
+            >
+              Excluir cliente
+            </ConfirmButton>
+          </Can>
         </aside>
       </div>
     </>

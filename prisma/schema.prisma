@@ -15,27 +15,31 @@ datasource db {
 // =========================================================
 
 model User {
-  id              String        @id
+  id              String            @id
   name            String
-  email           String        @unique
-  emailVerified   Boolean       @default(false) @map("email_verified")
+  email           String            @unique
+  emailVerified   Boolean           @default(false) @map("email_verified")
   image           String?
   // plugin username do Better Auth
-  username        String?       @unique
-  displayUsername String?       @map("display_username")
+  username        String?           @unique
+  displayUsername String?           @map("display_username")
   /// Perfil do colaborador
   phone           String?
-  jobTitle        String?       @map("job_title")
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at")
+  jobTitle        String?           @map("job_title")
+  /// Perfil de acesso (super admin, gestor, atendente...)
+  roleId          String?           @map("role_id") @db.Uuid
+  role            Role?             @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at")
   sessions        Session[]
   accounts        Account[]
   contracts       Contract[]
   quotes          Quote[]
-  leads           Lead[]        @relation("LeadOwner")
-  clients         Client[]      @relation("ClientOwner")
-  projects        Project[]     @relation("ProjectOwner")
+  leads           Lead[]            @relation("LeadOwner")
+  clients         Client[]          @relation("ClientOwner")
+  projects        Project[]         @relation("ProjectOwner")
   activities      ActivityLog[]
+  documents       ProjectDocument[] @relation("DocumentAuthor")
 
   @@map("user")
 }
@@ -112,22 +116,29 @@ model Media {
 }
 
 model Campaign {
-  id          String         @id @default(uuid()) @db.Uuid
-  name        String
+  id               String           @id @default(uuid()) @db.Uuid
+  name             String
   /// Gerado a partir do nome; é o utm_campaign do link rastreável.
-  slug        String         @unique
+  slug             String           @unique
   /// Canais onde a campanha roda (instagram, google, flyer...)
-  channels    String[]       @default([])
-  status      String         @default("planejada")
+  channels         String[]         @default([])
+  status           String           @default("planejada")
   /// Soma dos investimentos (CampaignCost), guardada para relatórios.
-  budgetCents Int            @default(0) @map("budget_cents")
-  startDate   DateTime?      @map("start_date") @db.Date
-  endDate     DateTime?      @map("end_date") @db.Date
-  notes       String?
-  createdAt   DateTime       @default(now()) @map("created_at")
-  updatedAt   DateTime       @default(now()) @updatedAt @map("updated_at")
-  leads       Lead[]
-  costs       CampaignCost[]
+  budgetCents      Int              @default(0) @map("budget_cents")
+  startDate        DateTime?        @map("start_date") @db.Date
+  endDate          DateTime?        @map("end_date") @db.Date
+  notes            String?
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at")
+  /// Campanha vinculada no Gerenciador de Anúncios da Meta (id da campanha)
+  metaCampaignId   String?          @unique @map("meta_campaign_id")
+  /// Campanha vinculada no Google Ads (campaign.id)
+  googleCampaignId String?          @unique @map("google_campaign_id")
+  /// Última sincronização de métricas com as plataformas
+  syncedAt         DateTime?        @map("synced_at")
+  leads            Lead[]
+  costs            CampaignCost[]
+  metrics          CampaignMetric[]
 
   @@map("campaigns")
 }
@@ -147,7 +158,7 @@ model CampaignCost {
 }
 
 model Client {
-  id                String         @id @default(uuid()) @db.Uuid
+  id                String            @id @default(uuid()) @db.Uuid
   /// Nome do responsável / contato
   name              String
   /// Empresa (razão social ou nome fantasia)
@@ -156,19 +167,19 @@ model Client {
   phone             String?
   /// CPF ou CNPJ
   document          String?
-  stateRegistration String?        @map("state_registration")
+  stateRegistration String?           @map("state_registration")
   address           String?
-  zipCode           String?        @map("zip_code")
+  zipCode           String?           @map("zip_code")
   city              String?
-  state             String?        @db.VarChar(2)
+  state             String?           @db.VarChar(2)
   notes             String?
-  createdAt         DateTime       @default(now()) @map("created_at")
-  updatedAt         DateTime       @default(now()) @updatedAt @map("updated_at")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @default(now()) @updatedAt @map("updated_at")
   /// Colaborador responsável pelo atendimento
-  ownerId           String?        @map("owner_id")
-  owner             User?          @relation("ClientOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerId           String?           @map("owner_id")
+  owner             User?             @relation("ClientOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   /// Cliente correspondente no Asaas (criado na primeira cobrança)
-  asaasCustomerId   String?        @map("asaas_customer_id")
+  asaasCustomerId   String?           @map("asaas_customer_id")
   contracts         Contract[]
   entries           FinanceEntry[]
   leads             Lead[]
@@ -176,6 +187,7 @@ model Client {
   files             ClientFile[]
   quotes            Quote[]
   invoices          Invoice[]
+  projectDocuments  ProjectDocument[]
 
   @@map("clients")
 }
@@ -232,40 +244,41 @@ model Lead {
 }
 
 model Project {
-  id          String         @id @default(uuid()) @db.Uuid
-  name        String
-  clientId    String?        @map("client_id") @db.Uuid
-  client      Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  id               String            @id @default(uuid()) @db.Uuid
+  name             String
+  clientId         String?           @map("client_id") @db.Uuid
+  client           Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
   /// Colaborador responsável pelo projeto
-  ownerId     String?        @map("owner_id")
-  owner       User?          @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerId          String?           @map("owner_id")
+  owner            User?             @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   /// Lead que originou o projeto
-  leadId      String?        @map("lead_id") @db.Uuid
-  lead        Lead?          @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  service     String?
-  stage       String         @default("briefing")
+  leadId           String?           @map("lead_id") @db.Uuid
+  lead             Lead?             @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  service          String?
+  stage            String            @default("briefing")
   /// Ordem do card dentro da coluna do quadro
-  position    Int            @default(0)
-  valueCents  Int            @default(0) @map("value_cents")
-  startDate   DateTime?      @map("start_date") @db.Date
-  dueDate     DateTime?      @map("due_date") @db.Date
+  position         Int               @default(0)
+  valueCents       Int               @default(0) @map("value_cents")
+  startDate        DateTime?         @map("start_date") @db.Date
+  dueDate          DateTime?         @map("due_date") @db.Date
   /// Escopo detalhado do projeto
-  description String?
+  description      String?
   /// Endereço publicado (produção)
-  url         String?
-  githubUrl   String?        @map("github_url")
-  previewUrl  String?        @map("preview_url")
-  designUrl   String?        @map("design_url")
-  docsUrl     String?        @map("docs_url")
-  notes       String?
-  createdAt   DateTime       @default(now()) @map("created_at")
-  updatedAt   DateTime       @default(now()) @updatedAt @map("updated_at")
-  tasks       ProjectTask[]
-  updates     ProjectNote[]
-  files       ProjectFile[]
-  contracts   Contract[]
-  entries     FinanceEntry[]
-  quotes      Quote[]
+  url              String?
+  githubUrl        String?           @map("github_url")
+  previewUrl       String?           @map("preview_url")
+  designUrl        String?           @map("design_url")
+  docsUrl          String?           @map("docs_url")
+  notes            String?
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @default(now()) @updatedAt @map("updated_at")
+  tasks            ProjectTask[]
+  updates          ProjectNote[]
+  files            ProjectFile[]
+  contracts        Contract[]
+  entries          FinanceEntry[]
+  quotes           Quote[]
+  projectDocuments ProjectDocument[]
 
   @@index([clientId])
   @@index([stage, position])
@@ -594,4 +607,128 @@ model Expense {
 
   @@index([active, frequency])
   @@map("expenses")
+}
+
+/// Perfil de acesso: nível por módulo (0 sem acesso, 1 ver, 2 editar, 3 excluir). Ver src/lib/permissions.ts.
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  /// super_admin | gestor | atendente | slug de um perfil criado no portal
+  key         String   @unique
+  name        String
+  description String?
+  /// Perfis do sistema não podem ser excluídos
+  system      Boolean  @default(false)
+  permissions Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+  users       User[]
+
+  @@map("roles")
+}
+
+/// Documento oficial do projeto (termo de abertura, escopo, MER, aprovação de layout...), com aprovação do cliente por link.
+model ProjectDocument {
+  id            String          @id @default(uuid()) @db.Uuid
+  /// DOC-2026-001
+  number        String          @unique
+  /// tap | escopo | tecnico | mer | layout | ata | entrega | outro (ver src/lib/documents.ts)
+  type          String
+  title         String
+  projectId     String?         @map("project_id") @db.Uuid
+  project       Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  clientId      String?         @map("client_id") @db.Uuid
+  client        Client?         @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  /// rascunho | enviado | visualizado | aprovado | ajustes | cancelado
+  status        String          @default("rascunho")
+  /// Seções do documento: [{ title, body }]
+  sections      Json            @default("[]")
+  version       Int             @default(1)
+  /// Link público de leitura/aprovação
+  token         String          @unique
+  sentAt        DateTime?       @map("sent_at")
+  viewedAt      DateTime?       @map("viewed_at")
+  decidedAt     DateTime?       @map("decided_at")
+  approverName  String?         @map("approver_name")
+  approverEmail String?         @map("approver_email")
+  approverIp    String?         @map("approver_ip")
+  approverAgent String?         @map("approver_agent")
+  /// SHA-256 do conteúdo aprovado
+  contentHash   String?         @map("content_hash")
+  createdById   String?         @map("created_by_id")
+  createdBy     User?           @relation("DocumentAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @default(now()) @updatedAt @map("updated_at")
+  files         DocumentFile[]
+  events        DocumentEvent[]
+
+  @@index([projectId])
+  @@index([clientId])
+  @@index([status])
+  @@map("project_documents")
+}
+
+model DocumentFile {
+  id         String          @id @default(uuid()) @db.Uuid
+  documentId String          @map("document_id") @db.Uuid
+  document   ProjectDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  name       String
+  label      String?
+  mime       String
+  size       Int
+  data       Bytes
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  @@index([documentId])
+  @@map("document_files")
+}
+
+/// Linha do tempo do documento: criação, envio, leitura, aprovação, pedido de ajustes, nova versão.
+model DocumentEvent {
+  id         String          @id @default(uuid()) @db.Uuid
+  documentId String          @map("document_id") @db.Uuid
+  document   ProjectDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  kind       String
+  version    Int
+  note       String?
+  /// Nome de quem fez (colaborador ou cliente)
+  actor      String?
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  @@index([documentId, createdAt])
+  @@map("document_events")
+}
+
+/// Meta mensal do BI (faturamento, leads, clientes novos, projetos vendidos...).
+model Goal {
+  id        String   @id @default(uuid()) @db.Uuid
+  /// "2026-10"
+  month     String
+  /// faturamento | vendas | leads | clientes | projetos | conversao
+  metric    String
+  /// Centavos para valores em R$; unidades para contagens; % × 100 para conversão
+  target    Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([month, metric])
+  @@map("goals")
+}
+
+/// Métricas diárias importadas do Meta Ads / Google Ads.
+model CampaignMetric {
+  id          String   @id @default(uuid()) @db.Uuid
+  campaignId  String   @map("campaign_id") @db.Uuid
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  /// meta | google
+  platform    String
+  date        DateTime @db.Date
+  spendCents  Int      @default(0) @map("spend_cents")
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  /// Leads/conversões contados pela plataforma
+  conversions Int      @default(0)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([campaignId, platform, date])
+  @@map("campaign_metrics")
 }

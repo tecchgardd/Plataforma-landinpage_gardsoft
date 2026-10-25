@@ -3744,3 +3744,881 @@
 .adm-bulk-actions .adm-btn.danger.ghost {
   width: auto;
 }
+
+/* ---------- Menu: recursos "Em breve" ---------- */
+.adm-nav-soon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: help;
+  outline: none;
+}
+.adm-nav-soon:hover,
+.adm-nav-soon:focus-visible {
+  background: var(--bg-soft);
+  color: var(--ink-2);
+}
+.adm-nav-soon:focus-visible {
+  box-shadow: 0 0 0 2px var(--blue);
+}
+.adm-soon-tag {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f4ebff;
+  color: #6941c6;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.adm-soon-pop {
+  position: fixed;
+  z-index: 80;
+  width: 280px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 13.5px;
+  line-height: 1.45;
+  box-shadow: 0 24px 50px -20px rgba(8, 18, 51, 0.6);
+  transform: translateY(-50%);
+  animation: soon-in 0.18s var(--ease);
+  pointer-events: none;
+}
+.adm-soon-pop strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+.adm-soon-pop .adm-soon-tag {
+  margin-left: 0;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+.adm-soon-pop p {
+  margin: 0 0 8px;
+  color: #d5dcf0;
+}
+.adm-soon-pop small {
+  color: #9fb3ff;
+  font-weight: 600;
+}
+.adm-soon-pop::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -6px;
+  width: 12px;
+  height: 12px;
+  background: var(--ink);
+  transform: translateY(-50%) rotate(45deg);
+}
+@keyframes soon-in {
+  from {
+    opacity: 0;
+    translate: -6px 0;
+  }
+}
+
+/* ---------- Perfis de acesso ---------- */
+.adm-role-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: 14px;
+}
+.adm-role-card {
+  display: grid;
+  gap: 6px;
+  transition: border-color 0.2s, transform 0.2s var(--ease);
+}
+.adm-role-card:hover {
+  border-color: var(--blue);
+  transform: translateY(-2px);
+}
+.adm-role-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.adm-role-card small {
+  color: var(--muted);
+}
+.adm-badge.role-super {
+  background: var(--ink);
+  color: #fff;
+}
+.adm-card-pad {
+  padding: 18px 20px 0;
+}
+.adm-role-table td:not(:first-child),
+.adm-role-table th:not(:first-child) {
+  text-align: center;
+}
+.adm-level {
+  display: inline-block;
+  min-width: 56px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #f2f4f7;
+  color: #98a2b3;
+}
+.adm-level.lv-1 {
+  background: #e0efff;
+  color: #1849a9;
+}
+.adm-level.lv-2 {
+  background: #fef0c7;
+  color: #93370d;
+}
+.adm-level.lv-3 {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.adm-matrix {
+  display: grid;
+  gap: 18px;
+}
+.adm-matrix-group {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.adm-matrix-group legend {
+  display: contents;
+}
+.adm-matrix-group legend > span:first-child {
+  display: block;
+  padding: 12px 16px 0;
+  font-family: var(--font-mono), monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+.adm-matrix-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 4px 16px 10px;
+  font-size: 12.5px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.adm-matrix-quick::before {
+  content: "Todos do grupo:";
+  color: var(--muted);
+}
+.adm-matrix-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.adm-matrix-row:last-child {
+  border-bottom: 0;
+}
+.adm-matrix-label {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.adm-matrix-label small {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.adm-segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+}
+.adm-segmented label {
+  position: relative;
+  padding: 7px 12px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.adm-segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.adm-segmented label:has(input:focus-visible) {
+  box-shadow: 0 0 0 2px var(--blue);
+}
+.adm-segmented label.on {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(10, 20, 48, 0.12);
+}
+.adm-segmented label.on.lv-1 {
+  color: #1849a9;
+}
+.adm-segmented label.on.lv-2 {
+  color: #93370d;
+}
+.adm-segmented label.on.lv-3 {
+  color: var(--ok);
+}
+.adm-matrix-group:disabled .adm-segmented label {
+  cursor: default;
+}
+.adm-empty-state {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+@media (max-width: 760px) {
+  .adm-matrix-row {
+    grid-template-columns: 1fr;
+  }
+  .adm-segmented {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .adm-segmented label {
+    padding: 9px 4px;
+    text-align: center;
+  }
+}
+.adm-soon-pop.below {
+  transform: none;
+}
+.adm-soon-pop.below::before {
+  top: -6px;
+  left: 24px;
+  transform: rotate(45deg);
+}
+.adm-sheet-soon {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  color: var(--muted);
+}
+.adm-sheet-soon span {
+  display: grid;
+  gap: 4px;
+}
+.adm-sheet-soon strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-2);
+}
+.adm-sheet-soon .adm-soon-tag {
+  margin-left: 0;
+}
+.adm-sheet-soon small {
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+/* ---------- Documentos do projeto ---------- */
+.adm-kpis-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.doc-rascunho {
+  background: #f2f4f7;
+  color: #475467;
+}
+.doc-enviado {
+  background: #e0efff;
+  color: #1849a9;
+}
+.doc-visualizado {
+  background: #f4ebff;
+  color: #6941c6;
+}
+.doc-aprovado {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.doc-ajustes {
+  background: #fef0c7;
+  color: #93370d;
+}
+.doc-cancelado {
+  background: #f2f4f7;
+  color: #98a2b3;
+  text-decoration: line-through;
+}
+.adm-type-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  gap: 10px;
+}
+.adm-type-card {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 2px solid var(--line);
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.adm-type-card:hover {
+  border-color: var(--line-strong);
+}
+.adm-type-card:has(input:checked) {
+  border-color: var(--blue);
+  background: var(--bg-tint);
+}
+.adm-type-card:has(input:focus-visible) {
+  box-shadow: 0 0 0 3px rgba(26, 92, 255, 0.3);
+}
+.adm-type-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.adm-type-card small {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.adm-sections {
+  display: grid;
+  gap: 14px;
+}
+.adm-section-edit {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.adm-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.adm-section-num {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+.adm-section-head input {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+.adm-section-tools {
+  display: flex;
+  gap: 4px;
+}
+.adm-section-edit textarea {
+  width: 100%;
+  background: #fff;
+}
+.adm-icon-btn.danger:hover {
+  color: var(--err);
+  border-color: #fda29b;
+}
+.adm-doc-read .adm-doc-section {
+  margin-top: 16px;
+}
+.adm-doc-read h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+.adm-doc-read ul {
+  margin: 0 0 8px;
+  padding-left: 20px;
+}
+.adm-sub-inline {
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--muted);
+}
+.adm-timeline li.ev-aprovado::before,
+.adm-timeline li.ev-aprovado_manual::before {
+  background: var(--ok);
+}
+.adm-timeline li.ev-ajustes::before {
+  background: #dc6803;
+}
+.adm-timeline li strong,
+.adm-timeline li small {
+  display: block;
+}
+.adm-timeline li small {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+@media (max-width: 1200px) {
+  .adm-kpis-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .adm-section-head {
+    flex-wrap: wrap;
+  }
+  .adm-section-tools {
+    margin-left: auto;
+  }
+}
+
+/* ---------- Rolagem suave e barras finas ---------- */
+.adm-root {
+  --scroll-thumb: rgba(10, 20, 48, 0.18);
+  --scroll-thumb-hover: rgba(10, 20, 48, 0.32);
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+.adm-root *,
+.adm-root *::before {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+.adm-root ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.adm-root ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.adm-root ::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--scroll-thumb) padding-box;
+}
+.adm-root ::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hover) padding-box;
+}
+/* Tabelas e listas roláveis: deslizar com inércia sem "puxar" a página junto. */
+.adm-table-wrap,
+.adm-tabs,
+.adm-sidebar nav,
+.adm-modal-backdrop,
+.adm-sheet-body {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* ---------- Menu lateral: sem rolagem horizontal ---------- */
+.adm-sidebar nav {
+  overflow-x: hidden;
+  /* barra só aparece ao passar o mouse sobre o menu */
+  scrollbar-color: transparent transparent;
+  padding-right: 4px;
+  margin-right: -4px;
+}
+.adm-sidebar nav:hover {
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+.adm-sidebar nav::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+.adm-sidebar nav:hover::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb) padding-box;
+}
+.adm-sidebar nav a,
+.adm-nav-toggle,
+.adm-nav-soon {
+  min-width: 0;
+  white-space: nowrap;
+}
+.adm-nav-soon > span:not(.adm-soon-tag) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.adm-nav-soon > .adm-soon-tag {
+  flex: none;
+  padding: 2px 6px;
+  font-size: 9.5px;
+}
+.adm-nav-soon > svg,
+.adm-sidebar nav a > svg,
+.adm-nav-toggle > svg {
+  flex: none;
+}
+
+/* Telas baixas (notebook 1366×768): menu mais compacto, sem cortar o rodapé do usuário. */
+@media (min-width: 901px) and (max-height: 860px) {
+  .adm-sidebar {
+    gap: 2px;
+    padding-top: 16px;
+    padding-bottom: 12px;
+  }
+  .adm-brand {
+    margin-bottom: 6px;
+  }
+  .adm-sidebar nav a,
+  .adm-nav-toggle,
+  .adm-nav-soon {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .adm-sidebar .adm-nav-children a {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .adm-user {
+    padding: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .adm-table-wrap,
+  .adm-tabs,
+  .adm-sidebar nav,
+  .adm-modal-backdrop,
+  .adm-sheet-body {
+    scroll-behavior: auto;
+  }
+}
+
+/* ---------- BI e metas ---------- */
+.adm-tabs-inline {
+  padding-bottom: 0;
+}
+.adm-chart-money .adm-chart-plot,
+.adm-chart-money .adm-chart-x {
+  padding-left: 64px;
+}
+.adm-chart-money .adm-chart-grid {
+  left: 64px;
+}
+.adm-chart-money .adm-chart-grid small {
+  left: -64px;
+  width: 58px;
+}
+.adm-chart-pair {
+  gap: 2px;
+}
+.adm-chart-pair .adm-chart-bar {
+  width: min(45%, 16px);
+}
+.adm-chart-bar.in {
+  background: #1a5cff;
+}
+.adm-chart-bar.out {
+  background: #c4560a;
+}
+.adm-chart-pair:hover .adm-chart-bar.in,
+.adm-chart-pair:focus-visible .adm-chart-bar.in {
+  background: var(--blue-dark);
+}
+.adm-chart-pair:hover .adm-chart-bar.out,
+.adm-chart-pair:focus-visible .adm-chart-bar.out {
+  background: #93370d;
+}
+.adm-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.adm-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.adm-legend b {
+  font-variant-numeric: tabular-nums;
+}
+.adm-legend .sw {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+.sw-in {
+  background: #1a5cff;
+}
+.sw-out {
+  background: #c4560a;
+}
+.adm-goals {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+.adm-goal {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.adm-goal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13.5px;
+}
+.adm-goal strong {
+  font-family: var(--font-display), sans-serif;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.adm-goal small {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.adm-goal-status {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.adm-goal.ok .adm-goal-status {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.adm-goal.track .adm-goal-status {
+  background: #e0efff;
+  color: #1849a9;
+}
+.adm-goal.behind .adm-goal-status {
+  background: #fef0c7;
+  color: #93370d;
+}
+.adm-goal-edit {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.adm-goal-edit summary {
+  font-weight: 600;
+  color: var(--blue);
+  cursor: pointer;
+}
+.adm-goal-edit .adm-form {
+  margin-top: 14px;
+}
+.adm-sub.hit {
+  color: var(--ok);
+  font-weight: 600;
+}
+.adm-embed {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.adm-embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+@media (max-width: 760px) {
+  .adm-embed {
+    aspect-ratio: 3 / 4;
+  }
+}
+
+/* ---------- KPIs: o número se ajusta à largura do card (nunca corta "R$ 1.950,00") ---------- */
+.adm-kpi {
+  container-type: inline-size;
+  min-width: 0;
+}
+.adm-kpi strong {
+  font-size: clamp(18px, 13cqi, 32px);
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.adm-kpi strong.adm-kpi-text {
+  font-size: clamp(16px, 9cqi, 22px);
+  white-space: normal;
+}
+/* 5 cards só lado a lado quando cabem; senão quebram em linhas iguais. */
+.adm-lead-kpis:not(.adm-kpis-3):not(.adm-kpis-4):not(.adm-kpis-2x2) {
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+}
+
+/* ---------- Gráficos: eixo X nunca alarga a página ---------- */
+.adm-chart {
+  min-width: 0;
+  overflow-x: clip;
+}
+.adm-chart-x span {
+  min-width: 0;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .adm-chart-money .adm-chart-plot,
+  .adm-chart-money .adm-chart-x {
+    padding-left: 52px;
+  }
+  .adm-chart-money .adm-chart-grid {
+    left: 52px;
+  }
+  .adm-chart-money .adm-chart-grid small {
+    left: -52px;
+    width: 48px;
+    font-size: 10px;
+  }
+  /* no celular, um rótulo a cada dois meses */
+  .adm-chart-x span:nth-child(2n) {
+    visibility: hidden;
+  }
+}
+/* Cabeçalho de card: título e ação lado a lado só quando cabem. */
+.adm-card-head {
+  flex-wrap: wrap;
+  row-gap: 10px;
+}
+.adm-card-head > div:first-child {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+/* ---------- Campanhas: integrações de anúncios ---------- */
+.adm-ads-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: 14px;
+}
+.adm-ads-platform {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.adm-ads-platform details summary {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--blue);
+  cursor: pointer;
+}
+.adm-steps {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.adm-steps code {
+  word-break: break-all;
+}
+.adm-ads-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(130px, 100%), 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.adm-ads-metrics div {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+.adm-ads-metrics dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.adm-ads-metrics dd {
+  margin: 2px 0 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.adm-form-inline .adm-form-grid {
+  grid-template-columns: 1fr;
+}
+.adm-sub.neg {
+  color: var(--err);
+}
+.adm-doc-read ul,
+.adm-modal-main .adm-doc-read ul {
+  list-style: disc;
+}
+.adm-doc-read li {
+  margin-bottom: 3px;
+}
+.adm-sidebar nav a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Tabelas largas em telas médias (notebook) ----------
+   Colunas marcadas com .opt somem quando a tabela tem menos de 1280px; o resumo delas
+   aparece na primeira coluna (.adm-compact-only). Ações sempre visíveis. */
+.adm-table-wrap {
+  container-type: inline-size;
+}
+.adm-compact-only {
+  display: none !important;
+}
+@container (max-width: 1280px) {
+  .adm-table .opt {
+    display: none;
+  }
+  .adm-table .adm-compact-only {
+    display: block !important;
+    margin-top: 2px;
+  }
+  .adm-leads-table .adm-status-select {
+    max-width: 190px;
+  }
+}
+/* Tabelas de resumo (que não viram card no celular): mais justas na tela pequena. */
+@media (max-width: 600px) {
+  .adm-table-keep th,
+  .adm-table-keep td {
+    padding: 10px 8px;
+  }
+  .adm-role-table .adm-level {
+    min-width: 0;
+    padding: 2px 6px;
+  }
+}
+@container (max-width: 640px) {
+  .adm-table-keep th,
+  .adm-table-keep td {
+    padding: 10px 8px;
+  }
+}

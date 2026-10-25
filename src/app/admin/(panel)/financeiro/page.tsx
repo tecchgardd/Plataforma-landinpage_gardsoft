@@ -2,7 +2,7 @@ import Link from "next/link";
 import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import { ContractBadge, EntryBadge } from "@/components/admin/Badges";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { money, shortDate } from "@/lib/admin/format";
 import { parseMonth } from "@/lib/admin/month";
 import { asaasConfigured, asaasEnvironment } from "@/lib/integrations/asaas";
@@ -19,7 +19,7 @@ function utcMonth(key: string, offset = 0) {
 }
 
 export default async function FinancePage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
-  await requireUser();
+  await requireAccess("financeiro", 1);
   await syncRecurringExpenses();
   const month = parseMonth((await searchParams).mes);
   const start = utcMonth(month.key);

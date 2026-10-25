@@ -6,7 +6,7 @@ import ActionButton from "@/components/admin/ActionButton";
 import { Select, TextArea } from "@/components/admin/Fields";
 import PageHeader from "@/components/admin/PageHeader";
 import { ContractBadge, QuoteBadge } from "@/components/admin/Badges";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { dateTime, money, shortDate } from "@/lib/admin/format";
 import { isExpired, itemTotal, loadQuote, quoteUrl, recipientOf } from "@/lib/finance/quote";
 import { emailConfigured } from "@/lib/integrations/email";
@@ -22,11 +22,12 @@ import {
 import CopyLink from "../../contratos/CopyLink";
 import QuoteFields from "../QuoteFields";
 import { quoteOptions } from "../options";
+import Can from "@/components/admin/Can";
 
 export const metadata = { title: "Orçamento" };
 
 export default async function QuotePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ erro?: string }> }) {
-  await requireUser();
+  await requireAccess("orcamentos", 1);
   const [{ id }, { erro }] = await Promise.all([params, searchParams]);
   if (!z.uuid().safeParse(id).success) notFound();
   const loaded = await loadQuote({ id });
@@ -243,9 +244,11 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
             </ConfirmButton>
           )}
           {!converted && (
-            <ConfirmButton action={deleteQuote.bind(null, quote.id)} confirm="Excluir este orçamento definitivamente?" className="adm-btn danger ghost">
-              Excluir orçamento
-            </ConfirmButton>
+            <Can module="orcamentos" level={3}>
+              <ConfirmButton action={deleteQuote.bind(null, quote.id)} confirm="Excluir este orçamento definitivamente?" className="adm-btn danger ghost">
+                Excluir orçamento
+              </ConfirmButton>
+            </Can>
           )}
         </aside>
       </div>

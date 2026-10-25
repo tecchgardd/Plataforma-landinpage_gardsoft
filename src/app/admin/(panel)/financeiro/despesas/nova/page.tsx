@@ -1,14 +1,14 @@
 import ActionForm from "@/components/admin/ActionForm";
 import PageHeader from "@/components/admin/PageHeader";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { saveExpense } from "../../../../_actions/expenses";
 import ExpenseFields from "../ExpenseFields";
 
 export const metadata = { title: "Nova despesa" };
 
 export default async function NewExpensePage() {
-  await requireUser();
+  await requireAccess("financeiro", 2);
   const accounts = await prisma.financeEntry.findMany({ where: { account: { not: null } }, distinct: ["account"], select: { account: true }, take: 30 });
   const today = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
   return (

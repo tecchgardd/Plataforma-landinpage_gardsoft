@@ -2,14 +2,16 @@ import Link from "next/link";
 import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import { CampaignBadge } from "@/components/admin/Badges";
 import { fromDbDate, prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { getAccess, requireAccess } from "@/lib/access";
+import AdsIntegrations from "./AdsIntegrations";
 import { money, shortDate } from "@/lib/admin/format";
 import { campaignChannels, labelOf } from "@/lib/admin/options";
 
 export const metadata = { title: "Campanhas" };
 
 export default async function CampaignsPage() {
-  await requireUser();
+  await requireAccess("campanhas", 1);
+  const canEdit = ((await getAccess())?.level("campanhas") ?? 0) >= 2;
   const campaigns = await prisma.campaign.findMany({
     include: { leads: { select: { temperature: true, status: true, valueCents: true } } },
     orderBy: { createdAt: "desc" },
@@ -31,11 +33,14 @@ export default async function CampaignsPage() {
         title="Campanhas"
         subtitle="Planeje as divulgações e acompanhe quantos leads e projetos cada uma gerou."
         actions={
-          <Link href="/admin/campanhas/novo" className="adm-btn">
-            + Nova campanha
-          </Link>
+          canEdit && (
+            <Link href="/admin/campanhas/novo" className="adm-btn">
+              + Nova campanha
+            </Link>
+          )
         }
       />
+      <AdsIntegrations canEdit={canEdit} />
       {rows.length === 0 ? (
         <Empty title="Nenhuma campanha ainda">
           Crie uma campanha, use o link rastreável nos anúncios e os leads do site serão ligados a ela automaticamente.

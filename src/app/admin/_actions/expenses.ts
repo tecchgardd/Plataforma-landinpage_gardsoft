@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { logActivity } from "@/lib/activity";
 import { parseMoney } from "@/lib/admin/format";
 import { expenseTypes, labelOf, paymentMethods } from "@/lib/admin/options";
@@ -84,7 +84,7 @@ const expenseSchema = z
   });
 
 export async function saveExpense(id: string | null, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("financeiro", 2);
   const parsed = expenseSchema.safeParse({ supplier: "", method: "", account: "", url: "", notes: "", ...formObject(formData) });
   if (!parsed.success) return { error: firstError(parsed.error) };
   const data = parsed.data;
@@ -145,7 +145,7 @@ async function setActive(ids: string[], active: boolean) {
 }
 
 export async function toggleExpense(id: string, active: boolean) {
-  const user = await requireUser();
+  const user = await requireAccess("financeiro", 2);
   await setActive([id], active);
   const expense = await prisma.expense.findUnique({ where: { id }, select: { name: true } });
   await logActivity(user, active ? "reativou" : "encerrou", "financeiro", `${active ? "Reativou" : "Encerrou"} a despesa ${expense?.name}`, id);
@@ -153,7 +153,7 @@ export async function toggleExpense(id: string, active: boolean) {
 }
 
 export async function deleteExpense(id: string) {
-  const user = await requireUser();
+  const user = await requireAccess("financeiro", 3);
   const expense = await prisma.expense.findUnique({ where: { id }, select: { name: true } });
   if (expense) {
     await clearFutureEntries(id);
@@ -166,7 +166,7 @@ export async function deleteExpense(id: string) {
 
 /** Ações da seleção na lista de despesas. */
 export async function bulkExpenses(action: "encerrar" | "reativar" | "excluir", ids: string[]): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("financeiro", action === "excluir" ? 3 : 2);
   const valid = ids.filter((id) => z.uuid().safeParse(id).success).slice(0, 500);
   if (valid.length === 0) return { error: "Nenhuma despesa selecionada." };
   let count = 0;

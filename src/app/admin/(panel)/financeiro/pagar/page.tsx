@@ -3,7 +3,7 @@ import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import BulkTable, { RowCheck, SelectAll } from "@/components/admin/BulkTable";
 import { EntryBadge } from "@/components/admin/Badges";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { getAccess, requireAccess } from "@/lib/access";
 import { money, shortDate } from "@/lib/admin/format";
 import { expenseTypes, labelOf, paymentMethods } from "@/lib/admin/options";
 import { monthlyCost, syncRecurringExpenses } from "@/lib/finance/expenses";
@@ -14,7 +14,8 @@ export const metadata = { title: "Contas a pagar" };
 const frequencyShort: Record<string, string> = { mensal: "Mensal", anual: "Anual", unica: "Única" };
 
 export default async function PayablesPage({ searchParams }: { searchParams: Promise<ListSearch> }) {
-  await requireUser();
+  await requireAccess("financeiro", 1);
+  const financeLevel = (await getAccess())?.level("financeiro") ?? 1;
   await syncRecurringExpenses();
   const sp = await searchParams;
   const { where, view, month, q } = entryWhere("pagar", sp);
@@ -90,6 +91,7 @@ export default async function PayablesPage({ searchParams }: { searchParams: Pro
       </form>
 
       <BulkTable
+        level={financeLevel}
         empty={<Empty title="Nada por aqui">{view === "vencidos" ? "Nenhuma conta vencida. 🎉" : "Nenhuma conta com esses filtros."}</Empty>}
         scope="entries"
         rows={entries.map(bulkRow)}

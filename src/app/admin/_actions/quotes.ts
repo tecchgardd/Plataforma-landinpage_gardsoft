@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma, toDbDate } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { logActivity } from "@/lib/activity";
 import { parseMoney } from "@/lib/admin/format";
 import { firstError, formObject, optionalDate, optionalText, optionalUuid, type FormState } from "@/lib/admin/form";
@@ -38,7 +38,7 @@ const todayIso = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 
 const addDays = (iso: string, days: number) => new Date(new Date(`${iso}T12:00:00Z`).getTime() + days * 864e5).toISOString().slice(0, 10);
 
 export async function saveQuote(id: string | null, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("orcamentos", 2);
   const parsed = quoteSchema.safeParse({ clientId: "", leadId: "", projectId: "", discount: "", ...formObject(formData) });
   if (!parsed.success) return { error: firstError(parsed.error) };
   let rawItems: unknown;
@@ -86,7 +86,7 @@ export async function saveQuote(id: string | null, _: FormState, formData: FormD
 
 /** Envia o link de aprovação por e-mail com o PDF. Sem e-mail configurado, o link fica pronto para copiar. */
 export async function sendQuote(id: string, _: FormState): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("orcamentos", 2);
   const loaded = await loadQuote({ id });
   if (!loaded) return { error: "Orçamento não encontrado." };
   const { quote } = loaded;
@@ -134,7 +134,7 @@ export async function sendQuote(id: string, _: FormState): Promise<FormState> {
 
 /** Registra a resposta dada fora do link (WhatsApp, telefone, reunião). */
 export async function decideQuoteManually(id: string, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("orcamentos", 2);
   const f = formObject(formData);
   const decision = f.decision === "aprovado" || f.decision === "recusado" ? f.decision : null;
   if (!decision) return { error: "Escolha aprovado ou recusado." };
@@ -158,7 +158,7 @@ export async function decideQuoteManually(id: string, _: FormState, formData: Fo
 
 /** Orçamento aprovado vira contrato em rascunho (com o cliente criado a partir do lead, se preciso). */
 export async function convertQuoteToContract(id: string) {
-  const user = await requireUser();
+  const user = await requireAccess("contratos", 2);
   const loaded = await loadQuote({ id });
   if (!loaded) redirect("/admin/orcamentos");
   const { quote, items } = loaded;
@@ -224,7 +224,7 @@ export async function convertQuoteToContract(id: string) {
 
 /** Nova versão a partir de um orçamento existente (ex.: depois de uma recusa). */
 export async function duplicateQuote(id: string) {
-  const user = await requireUser();
+  const user = await requireAccess("orcamentos", 2);
   const quote = await prisma.quote.findUnique({ where: { id } });
   if (!quote) redirect("/admin/orcamentos");
   const number = await nextQuoteNumber();
@@ -255,14 +255,14 @@ export async function duplicateQuote(id: string) {
 }
 
 export async function cancelQuote(id: string) {
-  const user = await requireUser();
+  const user = await requireAccess("orcamentos", 2);
   const quote = await prisma.quote.update({ where: { id }, data: { status: "cancelado" }, select: { number: true } });
   await logActivity(user, "cancelou", "orcamento", `Cancelou o orçamento ${quote.number}`, id);
   refresh();
 }
 
 export async function deleteQuote(id: string) {
-  const user = await requireUser();
+  const user = await requireAccess("orcamentos", 3);
   const quote = await prisma.quote.findUnique({ where: { id }, select: { number: true, contractId: true } });
   if (!quote) redirect("/admin/orcamentos");
   if (quote.contractId) redirect(`/admin/orcamentos/${id}`);

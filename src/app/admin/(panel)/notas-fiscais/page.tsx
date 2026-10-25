@@ -2,7 +2,7 @@ import Link from "next/link";
 import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import { InvoiceBadge } from "@/components/admin/Badges";
 import { prisma, type Prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { money, shortDate } from "@/lib/admin/format";
 import { parseMonth } from "@/lib/admin/month";
 import { invoiceStatuses } from "@/lib/admin/options";
@@ -12,7 +12,7 @@ export const metadata = { title: "Notas fiscais" };
 type Search = { status?: string; mes?: string; q?: string };
 
 export default async function InvoicesPage({ searchParams }: { searchParams: Promise<Search> }) {
-  await requireUser();
+  await requireAccess("notas", 1);
   const sp = await searchParams;
   const month = parseMonth(sp.mes);
   const [y, m] = month.key.split("-").map(Number);

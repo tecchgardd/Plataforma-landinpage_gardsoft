@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { logActivity } from "@/lib/activity";
 import { parseMoney } from "@/lib/admin/format";
 import { labelOf, leadSources, leadStatuses, temperatures, values } from "@/lib/admin/options";
@@ -32,7 +32,7 @@ const leadSchema = z.object({
 });
 
 export async function saveLead(id: string | null, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("leads", 2);
   const parsed = leadSchema.safeParse(formObject(formData));
   if (!parsed.success) return { error: firstError(parsed.error) };
   const { value, ...data } = parsed.data;
@@ -57,7 +57,7 @@ export async function saveLead(id: string | null, _: FormState, formData: FormDa
 }
 
 export async function setLeadTemperature(id: string, temperature: string) {
-  const user = await requireUser();
+  const user = await requireAccess("leads", 2);
   const parsed = z.enum(values(temperatures)).safeParse(temperature);
   if (!parsed.success) return;
   const lead = await prisma.lead.update({ where: { id }, data: { temperature: parsed.data }, select: { name: true } });
@@ -67,7 +67,7 @@ export async function setLeadTemperature(id: string, temperature: string) {
 
 /** Troca rápida de status pela lista de leads. */
 export async function setLeadStatus(id: string, status: string) {
-  const user = await requireUser();
+  const user = await requireAccess("leads", 2);
   const parsed = z.enum(values(leadStatuses)).safeParse(status);
   if (!parsed.success) return;
   const lead = await prisma.lead.update({ where: { id }, data: { status: parsed.data }, select: { name: true } });
@@ -77,7 +77,7 @@ export async function setLeadStatus(id: string, status: string) {
 
 /** Repescagem: lead sem interesse volta para a fila de contato. */
 export async function recoverLead(id: string) {
-  const user = await requireUser();
+  const user = await requireAccess("leads", 2);
   const lead = await prisma.lead.update({
     where: { id },
     data: { status: "novo", temperature: "frio" },
@@ -88,7 +88,7 @@ export async function recoverLead(id: string) {
 }
 
 export async function deleteLead(id: string) {
-  const user = await requireUser();
+  const user = await requireAccess("leads", 3);
   const lead = await prisma.lead.findUnique({ where: { id }, select: { name: true } });
   await prisma.lead.deleteMany({ where: { id } });
   if (lead) await logActivity(user, "excluiu", "lead", `Excluiu o lead ${lead.name}`, id);
@@ -98,7 +98,7 @@ export async function deleteLead(id: string) {
 
 /** Lead virou negócio: cria o cliente, o projeto inicial e marca o lead como "projeto fechado". */
 export async function convertLead(id: string) {
-  const user = await requireUser();
+  const user = await requireAccess("leads", 2);
   const lead = await prisma.lead.findUnique({ where: { id } });
   if (!lead) redirect("/admin/leads");
   const ownerId = lead.ownerId ?? user.id;

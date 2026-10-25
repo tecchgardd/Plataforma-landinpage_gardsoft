@@ -7,12 +7,20 @@ import { prisma } from "./prisma";
 import { siteUrl, vercelOrigins } from "./site-url";
 
 const baseURL = siteUrl;
+const isProduction = process.env.NODE_ENV === "production";
+// Rodando na máquina (npm run dev), o portal pode estar em qualquer porta local.
+const localOrigins = isProduction ? [] : ["http://localhost:*", "http://127.0.0.1:*"];
 
 export const auth = betterAuth({
   appName: "Gardsoft",
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL,
-  trustedOrigins: [baseURL, ...vercelOrigins],
+  trustedOrigins: [baseURL, ...vercelOrigins, ...localOrigins],
+  advanced: {
+    // Cookie seguro (só HTTPS) apenas em produção. Em desenvolvimento ele seria descartado em
+    // http://localhost — mesmo que BETTER_AUTH_URL aponte para o site publicado — e o login não "pegaria".
+    useSecureCookies: isProduction && baseURL.startsWith("https://"),
+  },
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,
@@ -84,7 +92,10 @@ export function ensureAdminUser() {
       console.warn("[gardsoft] Nenhum administrador cadastrado. Defina ADMIN_PASSWORD para criar o primeiro acesso.");
       return;
     }
-    await createAdminUser(creds);
+    const created = await createAdminUser(creds);
+    // O primeiro acesso é sempre super admin (perfil criado pela migração "perfis_de_acesso").
+    const superAdmin = await prisma.role.findUnique({ where: { key: "super_admin" }, select: { id: true } });
+    if (superAdmin) await prisma.user.update({ where: { id: created.id }, data: { roleId: superAdmin.id } });
     console.info(`[gardsoft] Administrador "${creds.username}" criado.`);
   })().catch((error) => {
     bootstrap = null;

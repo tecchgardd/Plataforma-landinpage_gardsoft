@@ -3,7 +3,7 @@ import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import BulkTable, { RowCheck, SelectAll } from "@/components/admin/BulkTable";
 import { EntryBadge } from "@/components/admin/Badges";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { getAccess, requireAccess } from "@/lib/access";
 import { money, shortDate } from "@/lib/admin/format";
 import { incomeCategories } from "@/lib/admin/options";
 import { asaasConfigured } from "@/lib/integrations/asaas";
@@ -13,7 +13,8 @@ import { bulkRow, entryWhere, hrefWith, isoDay, todayUtc, views, type ListSearch
 export const metadata = { title: "Cobranças" };
 
 export default async function ChargesPage({ searchParams }: { searchParams: Promise<ListSearch> }) {
-  await requireUser();
+  await requireAccess("financeiro", 1);
+  const financeLevel = (await getAccess())?.level("financeiro") ?? 1;
   const sp = await searchParams;
   const { where, view, month, q } = entryWhere("receber", sp);
   const today = todayUtc();
@@ -92,6 +93,7 @@ export default async function ChargesPage({ searchParams }: { searchParams: Prom
       </form>
 
       <BulkTable
+        level={financeLevel}
         empty={<Empty title="Nada por aqui">{view === "vencidos" ? "Nenhuma cobrança vencida. 🎉" : "Nenhuma cobrança com esses filtros."}</Empty>}
         scope="entries"
         rows={entries.map(bulkRow)}

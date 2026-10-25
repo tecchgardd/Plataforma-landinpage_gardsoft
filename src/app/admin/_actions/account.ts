@@ -6,8 +6,11 @@ import { z } from "zod";
 import { auth, createAdminUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { logActivity } from "@/lib/activity";
 import { firstError, formObject, optionalText, type FormState } from "@/lib/admin/form";
+import { checkRoleChange } from "@/lib/roles";
+import { SUPER_ADMIN } from "@/lib/permissions";
 
 const usernameSchema = z
   .string()
@@ -75,13 +78,16 @@ export async function updateProfile(_: FormState, formData: FormData): Promise<F
 /* ---------- Módulo de usuários ---------- */
 
 export async function createUser(_: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("usuarios", 2);
   const profile = profileSchema.safeParse(formObject(formData));
   if (!profile.success) return { error: firstError(profile.error) };
   const password = passwordSchema.safeParse(formObject(formData));
   if (!password.success) return { error: firstError(password.error) };
   const conflict = await uniqueness(null, profile.data.email, profile.data.username);
   if (conflict) return { error: conflict };
+  const roleId = formData.get("roleId")?.toString() || null;
+  const roleError = await checkRoleChange(null, roleId);
+  if (roleError) return { error: roleError };
 
   let id: string;
   try {
@@ -89,7 +95,7 @@ export async function createUser(_: FormState, formData: FormData): Promise<Form
     id = created.id;
     await prisma.user.update({
       where: { id },
-      data: { phone: profile.data.phone, jobTitle: profile.data.jobTitle, image: profile.data.image },
+      data: { phone: profile.data.phone, jobTitle: profile.data.jobTitle, image: profile.data.image, roleId },
     });
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Não foi possível criar o usuário." };
@@ -100,16 +106,22 @@ export async function createUser(_: FormState, formData: FormData): Promise<Form
 }
 
 export async function updateUser(id: string, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("usuarios", 2);
+  const roleId = formData.get("roleId")?.toString();
+  if (roleId !== undefined) {
+    const roleError = await checkRoleChange(id, roleId || null);
+    if (roleError) return { error: roleError };
+  }
   const result = await updateUserProfile(id, formData);
   if (result.error) return result;
+  if (roleId) await prisma.user.update({ where: { id }, data: { roleId } });
   await logActivity(user, "editou", "usuario", `Editou o usuário ${result.name}`, id);
   revalidatePath("/admin", "layout");
   return { success: "Usuário atualizado." };
 }
 
 export async function resetUserPassword(id: string, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("usuarios", 2);
   const parsed = passwordSchema.safeParse(formObject(formData));
   if (!parsed.success) return { error: firstError(parsed.error) };
   const target = await prisma.user.findUnique({ where: { id }, select: { name: true } });
@@ -122,10 +134,12 @@ export async function resetUserPassword(id: string, _: FormState, formData: Form
 }
 
 export async function deleteUser(id: string) {
-  const user = await requireUser();
+  const user = await requireAccess("usuarios", 3);
   if (id === user.id) redirect(`/admin/usuarios/${id}?erro=proprio`);
   if ((await prisma.user.count()) <= 1) redirect(`/admin/usuarios/${id}?erro=ultimo`);
-  const target = await prisma.user.findUnique({ where: { id }, select: { name: true } });
+  const target = await prisma.user.findUnique({ where: { id }, select: { name: true, role: { select: { key: true } } } });
+  if (target?.role?.key === SUPER_ADMIN && (await prisma.user.count({ where: { role: { key: SUPER_ADMIN } } })) <= 1)
+    redirect(`/admin/usuarios/${id}?erro=ultimo-admin`);
   await prisma.user.deleteMany({ where: { id } });
   if (target) await logActivity(user, "excluiu", "usuario", `Excluiu o usuário ${target.name}`, id);
   revalidatePath("/admin", "layout");

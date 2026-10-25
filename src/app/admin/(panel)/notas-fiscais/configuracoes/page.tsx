@@ -1,7 +1,7 @@
 import ActionForm from "@/components/admin/ActionForm";
 import { Input } from "@/components/admin/Fields";
 import PageHeader from "@/components/admin/PageHeader";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { getFinanceSettings } from "@/lib/finance/settings";
 import { asaasConfigured, asaasEnvironment } from "@/lib/integrations/asaas";
 import { saveInvoiceSettings } from "../../../_actions/settings";
@@ -17,7 +17,7 @@ function Check({ name, label, checked }: { name: string; label: string; checked:
 }
 
 export default async function InvoiceSettingsPage() {
-  await requireUser();
+  await requireAccess("notas", 1);
   const { invoice } = await getFinanceSettings();
   const pct = (n: number) => String(n).replace(".", ",");
 

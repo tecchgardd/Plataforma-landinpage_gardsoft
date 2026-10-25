@@ -2,7 +2,7 @@ import Link from "next/link";
 import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import { Owner } from "@/components/admin/Avatar";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { money, phoneLink } from "@/lib/admin/format";
 
 export const metadata = { title: "Clientes" };
@@ -16,7 +16,7 @@ function formatDocument(doc: string | null) {
 }
 
 export default async function ClientsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  await requireUser();
+  await requireAccess("clientes", 1);
   const q = (await searchParams).q?.trim();
   const like = { contains: q ?? "", mode: "insensitive" as const };
   const clients = await prisma.client.findMany({
@@ -57,8 +57,8 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
             <thead>
               <tr>
                 <th>Empresa</th>
-                <th>CPF / CNPJ</th>
-                <th>Cidade</th>
+                <th className="opt">CPF / CNPJ</th>
+                <th className="opt">Cidade</th>
                 <th>Telefone</th>
                 <th>E-mail</th>
                 <th>Atendido por</th>
@@ -81,10 +81,13 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
                           {client.company ? client.name : ""}
                           {client._count.files > 0 && ` · 📎 ${client._count.files}`}
                         </small>
+                        <small className="adm-compact-only">
+                          {[formatDocument(client.document), client.city ? `${client.city}${client.state ? `/${client.state}` : ""}` : null].filter((v) => v && v !== "—").join(" · ")}
+                        </small>
                       </Link>
                     </td>
-                    <td className="adm-mono">{formatDocument(client.document)}</td>
-                    <td>{client.city ? `${client.city}${client.state ? `/${client.state}` : ""}` : "—"}</td>
+                    <td className="adm-mono opt">{formatDocument(client.document)}</td>
+                    <td className="opt">{client.city ? `${client.city}${client.state ? `/${client.state}` : ""}` : "—"}</td>
                     <td>{client.phone ?? "—"}</td>
                     <td>{client.email ? <a href={`mailto:${client.email}`}>{client.email}</a> : "—"}</td>
                     <td>

@@ -2,14 +2,14 @@ import Link from "next/link";
 import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import { ContractBadge } from "@/components/admin/Badges";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { dateTime, money } from "@/lib/admin/format";
 import { contractStatuses } from "@/lib/admin/options";
 
 export const metadata = { title: "Contratos" };
 
 export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
-  await requireUser();
+  await requireAccess("contratos", 1);
   const { status } = await searchParams;
   const filter = contractStatuses.some((s) => s.value === status) ? status : undefined;
   const [contracts, counts] = await Promise.all([

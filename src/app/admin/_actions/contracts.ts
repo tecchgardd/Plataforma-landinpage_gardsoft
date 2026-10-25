@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { logActivity } from "@/lib/activity";
 import { firstError, formObject, optionalText, optionalUuid, type FormState } from "@/lib/admin/form";
 import { money, newToken, nextContractNumber, paymentPlanSchema, signUrl } from "@/lib/finance/contract";
@@ -30,7 +30,7 @@ const contractSchema = z.object({
 const refresh = () => revalidatePath("/admin", "layout");
 
 export async function saveContract(id: string | null, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("contratos", 2);
   const parsed = contractSchema.safeParse(formObject(formData));
   if (!parsed.success) return { error: firstError(parsed.error) };
   let rawPlan: unknown;
@@ -71,7 +71,7 @@ export async function saveContract(id: string | null, _: FormState, formData: Fo
 
 /** Envia para assinatura: e-mail com o link e a minuta em PDF. Sem e-mail configurado, o link fica pronto para copiar. */
 export async function sendContract(id: string, _: FormState): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("contratos", 2);
   const contract = await prisma.contract.findUnique({ where: { id }, include: { client: true } });
   if (!contract) return { error: "Contrato não encontrado." };
   if (contract.status === "assinado" || contract.status === "cancelado") return { error: "Este contrato não pode mais ser enviado." };
@@ -116,14 +116,14 @@ export async function sendContract(id: string, _: FormState): Promise<FormState>
 }
 
 export async function cancelContract(id: string) {
-  const user = await requireUser();
+  const user = await requireAccess("contratos", 2);
   const contract = await prisma.contract.update({ where: { id }, data: { status: "cancelado" }, select: { number: true } });
   await logActivity(user, "cancelou", "contrato", `Cancelou o contrato ${contract.number}`, id);
   refresh();
 }
 
 export async function deleteContract(id: string) {
-  const user = await requireUser();
+  const user = await requireAccess("contratos", 3);
   const contract = await prisma.contract.findUnique({ where: { id }, select: { number: true, status: true } });
   if (!contract) redirect("/admin/contratos");
   if (contract.status === "assinado") redirect(`/admin/contratos/${id}`);
@@ -135,7 +135,7 @@ export async function deleteContract(id: string) {
 
 /** Cria as contas a receber do contrato e, com o Asaas configurado, gera e envia as cobranças. */
 export async function generateCharges(id: string, _: FormState): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("financeiro", 2);
   const contract = await prisma.contract.findUnique({ where: { id }, select: { number: true, status: true } });
   if (!contract) return { error: "Contrato não encontrado." };
   if (contract.status !== "assinado") return { error: "Gere as cobranças depois que o contrato for assinado." };

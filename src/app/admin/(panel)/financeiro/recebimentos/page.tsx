@@ -3,7 +3,7 @@ import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import BulkTable, { RowCheck, SelectAll } from "@/components/admin/BulkTable";
 import { EntryBadge, InvoiceBadge } from "@/components/admin/Badges";
 import { prisma, type Prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { getAccess, requireAccess } from "@/lib/access";
 import { money, shortDate } from "@/lib/admin/format";
 import { parseMonth } from "@/lib/admin/month";
 import { incomeCategories, labelOf, paymentMethods } from "@/lib/admin/options";
@@ -59,7 +59,8 @@ function group<T>(items: T[], key: (i: T) => string, cents: (i: T) => number): S
 }
 
 export default async function ReceiptsPage({ searchParams }: { searchParams: Promise<{ mes?: string; ver?: string }> }) {
-  await requireUser();
+  await requireAccess("financeiro", 1);
+  const financeLevel = (await getAccess())?.level("financeiro") ?? 1;
   const sp = await searchParams;
   const month = parseMonth(sp.mes);
   const tab = sp.ver === "pendentes" ? "pendentes" : "recebidos";
@@ -171,6 +172,7 @@ export default async function ReceiptsPage({ searchParams }: { searchParams: Pro
       </nav>
 
       <BulkTable
+        level={financeLevel}
         empty={<Empty title={tab === "recebidos" ? "Nenhum recebimento neste mês" : "Nada pendente até este mês 🎉"} />}
         scope="entries"
         rows={rows.map(bulkRow)}

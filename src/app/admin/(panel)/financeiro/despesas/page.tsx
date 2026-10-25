@@ -2,7 +2,7 @@ import Link from "next/link";
 import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import BulkTable, { RowCheck, SelectAll } from "@/components/admin/BulkTable";
 import { prisma, type Prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { getAccess, requireAccess } from "@/lib/access";
 import { money, shortDate } from "@/lib/admin/format";
 import { expenseTypes, labelOf, paymentMethods } from "@/lib/admin/options";
 import { monthlyCost, nextDueDate, scheduleLabel, syncRecurringExpenses } from "@/lib/finance/expenses";
@@ -18,7 +18,8 @@ const tabs = [
 const groups: string[] = [...new Set(expenseTypes.map((t) => t.group))];
 
 export default async function ExpensesPage({ searchParams }: { searchParams: Promise<{ ver?: string; grupo?: string; q?: string }> }) {
-  await requireUser();
+  await requireAccess("financeiro", 1);
+  const financeLevel = (await getAccess())?.level("financeiro") ?? 1;
   await syncRecurringExpenses();
   const sp = await searchParams;
   const tab = tabs.find((t) => t.value === sp.ver)?.value ?? "ativas";
@@ -147,6 +148,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
       </form>
 
       <BulkTable
+        level={financeLevel}
         empty={
           <Empty title="Nenhuma despesa aqui">
             <Link href="/admin/financeiro/despesas/nova">Cadastre a primeira despesa</Link> — por exemplo, a hospedagem ou a assinatura de IA.

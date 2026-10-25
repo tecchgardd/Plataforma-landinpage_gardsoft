@@ -379,3 +379,101 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Documento do projeto (mesma página pública do contrato) */
+.ct-section {
+  margin-top: 18px;
+}
+.ct-section h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.ct-section ul {
+  margin: 0 0 10px;
+  padding-left: 20px;
+  color: var(--ink-2);
+}
+.ct-section li {
+  margin-bottom: 4px;
+}
+.ct-section a {
+  color: var(--blue);
+  font-weight: 600;
+}
+.ct-muted {
+  color: var(--muted);
+  font-style: italic;
+}
+.ct-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: 14px;
+}
+.ct-figures figure {
+  margin: 0;
+  padding: 8px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.ct-figures img {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #fff;
+}
+.ct-figures figcaption {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.ct-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.ct-choice label {
+  display: grid;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 2px solid var(--line);
+  cursor: pointer;
+}
+.ct-choice label.on {
+  border-color: var(--blue);
+  background: var(--bg-tint);
+}
+.ct-choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.ct-choice label:has(input:focus-visible) {
+  box-shadow: 0 0 0 3px rgba(26, 92, 255, 0.3);
+}
+.ct-choice small {
+  color: var(--muted);
+}
+.sign-grid textarea {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  font: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+.sign-grid textarea:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 4px rgba(26, 92, 255, 0.12);
+}
+@media (max-width: 640px) {
+  .ct-choice {
+    grid-template-columns: 1fr;
+  }
+}

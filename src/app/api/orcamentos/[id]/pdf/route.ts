@@ -1,12 +1,12 @@
-import { headers } from "next/headers";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { getAccess } from "@/lib/access";
 import { quotePdf } from "@/lib/finance/quote-pdf";
 
 /** PDF do orçamento para a equipe (qualquer situação). */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  const access = await getAccess();
+  if (!access) return new Response("Unauthorized", { status: 401 });
+  if (access.level("orcamentos") < 1) return new Response("Forbidden", { status: 403 });
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) return new Response("Not found", { status: 404 });
   const pdf = await quotePdf({ id });

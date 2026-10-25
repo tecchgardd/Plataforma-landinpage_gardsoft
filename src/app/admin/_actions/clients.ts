@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { logActivity } from "@/lib/activity";
 import { readUpload } from "@/lib/files";
 import { firstError, formObject, optionalText, type FormState } from "@/lib/admin/form";
@@ -38,7 +38,7 @@ const clientSchema = z.object({
 });
 
 export async function saveClient(id: string | null, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("clientes", 2);
   const parsed = clientSchema.safeParse(formObject(formData));
   if (!parsed.success) return { error: firstError(parsed.error) };
   const label = parsed.data.company ?? parsed.data.name;
@@ -58,7 +58,7 @@ export async function saveClient(id: string | null, _: FormState, formData: Form
 }
 
 export async function deleteClient(id: string) {
-  const user = await requireUser();
+  const user = await requireAccess("clientes", 3);
   const client = await prisma.client.findUnique({ where: { id }, select: { name: true, company: true } });
   await prisma.client.deleteMany({ where: { id } });
   if (client) await logActivity(user, "excluiu", "cliente", `Excluiu o cliente ${client.company ?? client.name}`, id);
@@ -68,7 +68,7 @@ export async function deleteClient(id: string) {
 
 /** Anexa um documento ao cadastro do cliente (inscrição estadual, contrato social...). */
 export async function uploadClientFile(clientId: string, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("clientes", 2);
   const file = await readUpload(formData);
   if ("error" in file) return { error: file.error };
   const label = String(formData.get("label") ?? "").trim().slice(0, 80) || null;
@@ -81,7 +81,7 @@ export async function uploadClientFile(clientId: string, _: FormState, formData:
 }
 
 export async function deleteClientFile(fileId: string) {
-  const user = await requireUser();
+  const user = await requireAccess("clientes", 2);
   const file = await prisma.clientFile.findUnique({
     where: { id: fileId },
     select: { clientId: true, name: true, label: true },

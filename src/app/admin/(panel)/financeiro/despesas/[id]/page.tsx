@@ -6,18 +6,20 @@ import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import BulkTable, { RowCheck, SelectAll } from "@/components/admin/BulkTable";
 import { EntryBadge } from "@/components/admin/Badges";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { getAccess, requireAccess } from "@/lib/access";
 import { money, moneyInput, shortDate } from "@/lib/admin/format";
 import { expenseTypes, labelOf, paymentMethods } from "@/lib/admin/options";
 import { monthlyCost, nextDueDate, scheduleLabel, syncRecurringExpenses } from "@/lib/finance/expenses";
 import { deleteExpense, saveExpense, toggleExpense } from "../../../../_actions/expenses";
 import ExpenseFields from "../ExpenseFields";
 import { bulkRow, isoDay } from "../../shared";
+import Can from "@/components/admin/Can";
 
 export const metadata = { title: "Despesa" };
 
 export default async function ExpensePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ lancadas?: string }> }) {
-  await requireUser();
+  await requireAccess("financeiro", 1);
+  const financeLevel = (await getAccess())?.level("financeiro") ?? 1;
   const [{ id }, { lancadas }] = await Promise.all([params, searchParams]);
   if (!z.uuid().safeParse(id).success) notFound();
   await syncRecurringExpenses();
@@ -76,6 +78,7 @@ export default async function ExpensePage({ params, searchParams }: { params: Pr
               <Link href="/admin/financeiro/pagar">Contas a pagar →</Link>
             </div>
             <BulkTable
+        level={financeLevel}
               empty={<Empty title="Nenhum vencimento lançado ainda" />}
               scope="entries"
               rows={expense.entries.map((e) => bulkRow(e))}
@@ -201,13 +204,15 @@ export default async function ExpensePage({ params, searchParams }: { params: Pr
                 Reativar despesa
               </ConfirmButton>
             ))}
-          <ConfirmButton
-            action={deleteExpense.bind(null, expense.id)}
-            confirm="Excluir esta despesa? Os vencimentos em aberto saem de contas a pagar; os já pagos continuam no histórico."
-            className="adm-btn danger ghost"
-          >
-            Excluir
-          </ConfirmButton>
+          <Can module="financeiro" level={3}>
+            <ConfirmButton
+              action={deleteExpense.bind(null, expense.id)}
+              confirm="Excluir esta despesa? Os vencimentos em aberto saem de contas a pagar; os já pagos continuam no histórico."
+              className="adm-btn danger ghost"
+            >
+              Excluir
+            </ConfirmButton>
+          </Can>
         </aside>
       </div>
     </>

@@ -1,14 +1,14 @@
 import ActionForm from "@/components/admin/ActionForm";
 import PageHeader from "@/components/admin/PageHeader";
 import { getTeam } from "@/lib/activity";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { saveClient } from "../../../_actions/clients";
 import ClientFields from "../ClientFields";
 
 export const metadata = { title: "Novo cliente" };
 
 export default async function NewClientPage() {
-  await requireUser();
+  await requireAccess("clientes", 2);
   const team = await getTeam();
   return (
     <>

@@ -26,6 +26,8 @@ export const temperatures = [
 export const leadSources = [
   { value: "site", label: "Site" },
   { value: "campanha", label: "Campanha" },
+  { value: "meta", label: "Meta Ads (formulário)" },
+  { value: "google", label: "Google Ads" },
   { value: "whatsapp", label: "WhatsApp" },
   { value: "instagram", label: "Instagram" },
   { value: "indicacao", label: "Indicação" },

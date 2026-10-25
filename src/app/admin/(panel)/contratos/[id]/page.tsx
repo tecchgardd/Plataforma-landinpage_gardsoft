@@ -6,7 +6,7 @@ import ActionButton from "@/components/admin/ActionButton";
 import PageHeader from "@/components/admin/PageHeader";
 import { ContractBadge, EntryBadge } from "@/components/admin/Badges";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { dateTime, money, shortDate } from "@/lib/admin/format";
 import { paymentPlanSchema, signUrl, verificationCode } from "@/lib/finance/contract";
 import { formatCpfCnpj } from "@/lib/finance/document";
@@ -15,11 +15,12 @@ import { emailConfigured } from "@/lib/integrations/email";
 import { cancelContract, deleteContract, generateCharges, saveContract, sendContract } from "../../../_actions/contracts";
 import ContractFields from "../ContractFields";
 import CopyLink from "../CopyLink";
+import Can from "@/components/admin/Can";
 
 export const metadata = { title: "Contrato" };
 
 export default async function ContractPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireUser();
+  await requireAccess("contratos", 1);
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
   const [contract, clients, projects] = await Promise.all([
@@ -220,9 +221,11 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
             </ConfirmButton>
           )}
           {contract.status !== "assinado" && (
-            <ConfirmButton action={deleteContract.bind(null, contract.id)} confirm="Excluir este contrato definitivamente?" className="adm-btn danger ghost">
-              Excluir contrato
-            </ConfirmButton>
+            <Can module="contratos" level={3}>
+              <ConfirmButton action={deleteContract.bind(null, contract.id)} confirm="Excluir este contrato definitivamente?" className="adm-btn danger ghost">
+                Excluir contrato
+              </ConfirmButton>
+            </Can>
           )}
         </aside>
       </div>

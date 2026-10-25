@@ -73,6 +73,28 @@ O passo a passo também aparece no portal, em **Financeiro → Cobrança e integ
 
 Fluxo: **Lead ou cliente → Orçamento → Cliente aprova pelo link → Gerar contrato → Enviar → Cliente assina pelo link → Parcelas lançadas (e cobranças geradas no Asaas, se configurado) → Pagamento confirmado pelo webhook ou baixa manual → Nota fiscal.**
 
+## Tráfego pago: Meta e Google Ads
+
+Sem as chaves, as campanhas funcionam como antes (link rastreável e custos lançados à mão). Com elas:
+
+| Variável | Uso |
+| --- | --- |
+| `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID` | Importa gasto, impressões, cliques e leads de cada campanha do Gerenciador de Anúncios. |
+| `META_APP_SECRET`, `META_VERIFY_TOKEN` | Webhook do Lead Ads: cada formulário preenchido num anúncio vira um lead "quente" em **Leads**, já ligado à campanha. No app da Meta, assine o campo `leadgen` com a URL `https://SEU-DOMINIO/api/webhooks/meta`. |
+| `GOOGLE_ADS_*` | Importa gasto, impressões, cliques e conversões do Google Ads (token de desenvolvedor + OAuth com refresh token). |
+| `CRON_SECRET` | Protege a sincronização diária (`vercel.json` chama `/api/cron/anuncios` todo dia às 6h de Brasília). |
+
+Em **Campanhas**, use "Importar campanhas" (cria e vincula) ou vincule uma campanha existente na página dela. O gasto importado entra no investimento e alimenta o custo por lead e o ROI no **BI e metas**.
+
+## Perfis de acesso
+
+Cada usuário tem um perfil (Administração → Perfis de acesso). Para cada módulo, o perfil define: sem acesso, ver, editar ou excluir. A regra vale no menu, nas páginas, nas ações e nos downloads.
+
+- **Super admin**: acesso total, sempre. Só um super admin cria ou remove outro, e sempre sobra pelo menos um.
+- **Gestor** e **Atendente** vêm com padrões e podem ser ajustados. Dá para criar novos perfis.
+- Ninguém muda o próprio perfil nem as permissões do perfil que usa.
+- Os padrões ficam em `src/lib/permissions.ts`. Um módulo novo precisa entrar ali e usar `requireAccess("modulo", nivel)`.
+
 ## Publicar (Vercel + Neon)
 
 1. Na Vercel, configure `DATABASE_URL`, `DIRECT_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` e `ADMIN_PASSWORD` (com uma senha forte).
@@ -103,12 +125,18 @@ Fluxo: **Lead ou cliente → Orçamento → Cliente aprova pelo link → Gerar c
 | `src/app/orcamento/[token]` | Página pública de aprovação do orçamento |
 | `src/app/contrato/[token]` | Página pública de assinatura do contrato |
 | `src/app/api/webhooks/asaas` | Webhook do Asaas (baixa automática e nota fiscal) |
+| `src/lib/permissions.ts`, `src/lib/access.ts` | Módulos, níveis, perfis padrão e `requireAccess` |
+| `src/lib/documents.ts` | Tipos de documento do projeto e os modelos de seções (TAP, escopo, MER...) |
+| `src/app/documento/[token]` | Página pública de leitura e aprovação dos documentos do projeto |
+| `src/lib/bi-data.ts` | Indicadores do BI (série mensal, vendas por serviço, campanhas, metas) |
+| `src/lib/ads-sync.ts`, `src/lib/integrations/meta.ts`, `google-ads.ts` | Sincronização de anúncios |
+| `src/app/api/webhooks/meta` | Webhook do Meta Lead Ads |
 
 ## Segurança
 
-- Não existe cadastro público: novos administradores só são criados por quem já está logado (**Minha conta**).
+- Não existe cadastro público: novos usuários só são criados em **Administração → Usuários**, por quem tem permissão.
 - Troque a senha padrão "admin" antes de publicar. O portal avisa enquanto ela estiver em uso.
 - O login tem limite de 5 tentativas por minuto. As sessões duram 14 dias.
-- Todas as páginas e ações do portal verificam a sessão no servidor.
+- Todas as páginas, ações e downloads do portal verificam a sessão e o perfil de acesso no servidor.
 - Uploads aceitam só JPG, PNG, WEBP e GIF de até 5 MB. O tipo é conferido pelo conteúdo do arquivo.
 - O formulário do site tem campo anti-robô e limite de envios por IP. Esse limite é guardado em memória, por instância do servidor.

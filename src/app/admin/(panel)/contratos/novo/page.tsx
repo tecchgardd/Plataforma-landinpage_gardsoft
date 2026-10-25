@@ -1,7 +1,7 @@
 import ActionForm from "@/components/admin/ActionForm";
 import PageHeader from "@/components/admin/PageHeader";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { getFinanceSettings } from "@/lib/finance/settings";
 import { saveContract } from "../../../_actions/contracts";
 import ContractFields from "../ContractFields";
@@ -9,7 +9,7 @@ import ContractFields from "../ContractFields";
 export const metadata = { title: "Novo contrato" };
 
 export default async function NewContractPage({ searchParams }: { searchParams: Promise<{ cliente?: string; projeto?: string }> }) {
-  await requireUser();
+  await requireAccess("contratos", 2);
   const { cliente, projeto } = await searchParams;
   const [clients, projects, settings, project] = await Promise.all([
     prisma.client.findMany({ select: { id: true, name: true, company: true }, orderBy: { name: "asc" } }),

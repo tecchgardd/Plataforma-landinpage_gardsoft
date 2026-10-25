@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma, toDbDate } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { logActivity } from "@/lib/activity";
 import { readUpload } from "@/lib/files";
 import { parseMoney } from "@/lib/admin/format";
@@ -50,7 +50,7 @@ async function attachFiles(invoiceId: string, formData: FormData) {
 
 /** Nota emitida fora do Asaas (portal da prefeitura). Notas do Asaas e canceladas só aceitam observações. */
 export async function saveInvoice(id: string | null, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("notas", 2);
   if (id) {
     const current = await prisma.invoice.findUnique({ where: { id }, select: { source: true, status: true } });
     if (!current) return { error: "Nota não encontrada." };
@@ -87,7 +87,7 @@ export async function saveInvoice(id: string | null, _: FormState, formData: For
 
 /** Cancela a nota. No Asaas, pede o cancelamento à prefeitura e a confirmação chega pelo webhook. */
 export async function cancelInvoice(id: string, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("notas", 2);
   const reason = String(formData.get("reason") ?? "").trim().slice(0, 500);
   if (reason.length < 5) return { error: "Informe o motivo do cancelamento." };
   const invoice = await prisma.invoice.findUnique({ where: { id } });
@@ -114,7 +114,7 @@ export async function cancelInvoice(id: string, _: FormState, formData: FormData
 }
 
 export async function syncInvoice(id: string, _: FormState): Promise<FormState> {
-  await requireUser();
+  await requireAccess("notas", 2);
   const invoice = await prisma.invoice.findUnique({ where: { id }, select: { asaasInvoiceId: true } });
   if (!invoice?.asaasInvoiceId) return { error: "Esta nota não foi emitida pelo Asaas." };
   try {
@@ -127,7 +127,7 @@ export async function syncInvoice(id: string, _: FormState): Promise<FormState> 
 }
 
 export async function deleteInvoice(id: string) {
-  const user = await requireUser();
+  const user = await requireAccess("notas", 3);
   const invoice = await prisma.invoice.findUnique({ where: { id }, select: { source: true, number: true, description: true } });
   if (!invoice) redirect("/admin/notas-fiscais");
   if (invoice.source === "asaas") redirect(`/admin/notas-fiscais/${id}`);
@@ -138,7 +138,7 @@ export async function deleteInvoice(id: string) {
 }
 
 export async function uploadInvoiceFile(invoiceId: string, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("notas", 2);
   const file = await readUpload(formData);
   if ("error" in file) return { error: file.error };
   const label = String(formData.get("label") ?? "").trim().slice(0, 80) || null;
@@ -149,7 +149,7 @@ export async function uploadInvoiceFile(invoiceId: string, _: FormState, formDat
 }
 
 export async function deleteInvoiceFile(fileId: string) {
-  await requireUser();
+  await requireAccess("notas", 2);
   await prisma.invoiceFile.deleteMany({ where: { id: fileId } });
   refresh();
 }

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma, toDbDate } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { logActivity } from "@/lib/activity";
 import { readUpload } from "@/lib/files";
 import { parseMoney } from "@/lib/admin/format";
@@ -43,7 +43,7 @@ async function systemNote(projectId: string, author: string, text: string) {
 }
 
 export async function saveProject(id: string | null, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("projetos", 2);
   const parsed = projectSchema.safeParse(formObject(formData));
   if (!parsed.success) return { error: firstError(parsed.error) };
   const { value, startDate, dueDate, ...rest } = parsed.data;
@@ -73,7 +73,7 @@ export async function saveProject(id: string | null, _: FormState, formData: For
 
 /** Arrastar e soltar no quadro: coloca o card na coluna `stage`, na posição `index`. */
 export async function moveProjectTo(id: string, stage: string, index: number) {
-  const user = await requireUser();
+  const user = await requireAccess("projetos", 2);
   const target = z.enum(values(projectStages)).safeParse(stage);
   if (!target.success) return;
   const project = await prisma.project.findUnique({ where: { id }, select: { stage: true, name: true } });
@@ -100,7 +100,7 @@ export async function moveProjectTo(id: string, stage: string, index: number) {
 }
 
 export async function deleteProject(id: string) {
-  const user = await requireUser();
+  const user = await requireAccess("projetos", 3);
   const project = await prisma.project.findUnique({ where: { id }, select: { name: true } });
   await prisma.project.deleteMany({ where: { id } });
   if (project) await logActivity(user, "excluiu", "projeto", `Excluiu o projeto ${project.name}`, id);
@@ -111,7 +111,7 @@ export async function deleteProject(id: string) {
 /* ---------- checklist ---------- */
 
 export async function addTask(projectId: string, title: string) {
-  await requireUser();
+  await requireAccess("projetos", 2);
   const clean = title.trim().slice(0, 200);
   if (!clean) return;
   const last = await prisma.projectTask.aggregate({ where: { projectId }, _max: { position: true } });
@@ -120,7 +120,7 @@ export async function addTask(projectId: string, title: string) {
 }
 
 export async function toggleTask(id: string, done: boolean) {
-  const user = await requireUser();
+  const user = await requireAccess("projetos", 2);
   const task = await prisma.projectTask.update({
     where: { id },
     data: { done },
@@ -131,7 +131,7 @@ export async function toggleTask(id: string, done: boolean) {
 }
 
 export async function deleteTask(id: string) {
-  await requireUser();
+  await requireAccess("projetos", 2);
   await prisma.projectTask.deleteMany({ where: { id } });
   refresh();
 }
@@ -139,7 +139,7 @@ export async function deleteTask(id: string) {
 /* ---------- atualizações ---------- */
 
 export async function addNote(projectId: string, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("projetos", 2);
   const text = String(formData.get("text") ?? "").trim();
   if (!text) return { error: "Escreva a atualização." };
   const project = await prisma.project.findUnique({ where: { id: projectId }, select: { name: true } });
@@ -151,7 +151,7 @@ export async function addNote(projectId: string, _: FormState, formData: FormDat
 }
 
 export async function deleteNote(id: string) {
-  await requireUser();
+  await requireAccess("projetos", 2);
   await prisma.projectNote.deleteMany({ where: { id, kind: "nota" } });
   refresh();
 }
@@ -159,7 +159,7 @@ export async function deleteNote(id: string) {
 /* ---------- documentação ---------- */
 
 export async function uploadProjectFile(projectId: string, _: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("projetos", 2);
   const file = await readUpload(formData);
   if ("error" in file) return { error: file.error };
   const label = String(formData.get("label") ?? "").trim().slice(0, 80) || null;
@@ -172,7 +172,7 @@ export async function uploadProjectFile(projectId: string, _: FormState, formDat
 }
 
 export async function deleteProjectFile(fileId: string) {
-  const user = await requireUser();
+  const user = await requireAccess("projetos", 2);
   const file = await prisma.projectFile.findUnique({ where: { id: fileId }, select: { projectId: true, name: true, label: true } });
   if (!file) return;
   await prisma.projectFile.delete({ where: { id: fileId } });

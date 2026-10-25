@@ -2,7 +2,7 @@ import Link from "next/link";
 import ActionForm from "@/components/admin/ActionForm";
 import { Input, Select } from "@/components/admin/Fields";
 import PageHeader from "@/components/admin/PageHeader";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { formatCpfCnpj } from "@/lib/finance/document";
 import { getFinanceSettings } from "@/lib/finance/settings";
 import { saveCompanyProfile } from "../../_actions/settings";
@@ -17,7 +17,7 @@ const taxRegimes = [
 ];
 
 export default async function CompanyPage() {
-  await requireUser();
+  await requireAccess("empresa", 1);
   const { company: c } = await getFinanceSettings();
   const missing = [!c.document && "CNPJ", !c.address && "endereço", !c.representative && "representante legal"].filter(Boolean) as string[];
 

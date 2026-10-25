@@ -2,7 +2,7 @@ import Link from "next/link";
 import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import { StageBadge, StatusBadge, TempBadge } from "@/components/admin/Badges";
 import { fromDbDate, prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { getAccess, requireAccess } from "@/lib/access";
 import { dateTime, money, shortDate } from "@/lib/admin/format";
 import { leadStatuses, temperatures } from "@/lib/admin/options";
 import { dayInBrazil, parseMonth } from "@/lib/admin/month";
@@ -23,7 +23,9 @@ const revenueItems = [
 ];
 
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
-  const user = await requireUser();
+  const user = await requireAccess("dashboard", 1);
+  // Valores de venda só para quem vê o Financeiro.
+  const seesMoney = ((await getAccess())?.level("financeiro") ?? 0) > 0;
   const month = parseMonth((await searchParams).mes);
   const inMonth = { gte: month.start, lt: month.end };
   const today = new Date().toISOString().slice(0, 10);
@@ -153,48 +155,50 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         ))}
       </section>
 
-      <section className="adm-card">
-        <div className="adm-card-head">
-          <div>
-            <h2>Receita do mês</h2>
-            <p className="adm-card-sub">
-              Projetos vendidos em {month.label}: orçamento aprovado, contrato assinado ou negócio fechado no lead.
-            </p>
-          </div>
-          <div className="adm-revenue-total">
-            <small>Total</small>
-            <strong>{money(revenueTotal)}</strong>
-            <small>
-              {soldProjects.length} projeto{soldProjects.length === 1 ? "" : "s"}
-            </small>
-          </div>
-        </div>
-        {negotiating.length > 0 && (
-          <Link href="/admin/leads?grupo=andamento" className="adm-pipeline-note">
-            <span>Em negociação</span>
-            <strong>{money(negotiatingTotal)}</strong>
-            <small>
-              {negotiating.length} lead{negotiating.length === 1 ? "" : "s"} em andamento · entra na receita quando o orçamento for aprovado
-              ou o negócio for fechado
-            </small>
-          </Link>
-        )}
-        <div className="adm-revenue">
-          {revenue.map((r) => (
-            <div key={r.label} className="adm-revenue-item">
-              <span>{r.label}</span>
-              <strong>{money(r.total)}</strong>
-              <span className="adm-bar-track" title={`${r.label}: ${money(r.total)}`}>
-                {r.total > 0 && <span className="adm-bar" style={{ width: `${(r.total / revenueMax) * 100}%` }} />}
-              </span>
+      {seesMoney && (
+        <section className="adm-card">
+          <div className="adm-card-head">
+            <div>
+              <h2>Receita do mês</h2>
+              <p className="adm-card-sub">
+                Projetos vendidos em {month.label}: orçamento aprovado, contrato assinado ou negócio fechado no lead.
+              </p>
+            </div>
+            <div className="adm-revenue-total">
+              <small>Total</small>
+              <strong>{money(revenueTotal)}</strong>
               <small>
-                {r.qty} venda{r.qty === 1 ? "" : "s"}
-                {revenueTotal > 0 && r.total > 0 && ` · ${Math.round((r.total / revenueTotal) * 100)}%`}
+                {soldProjects.length} projeto{soldProjects.length === 1 ? "" : "s"}
               </small>
             </div>
-          ))}
-        </div>
-      </section>
+          </div>
+          {negotiating.length > 0 && (
+            <Link href="/admin/leads?grupo=andamento" className="adm-pipeline-note">
+              <span>Em negociação</span>
+              <strong>{money(negotiatingTotal)}</strong>
+              <small>
+                {negotiating.length} lead{negotiating.length === 1 ? "" : "s"} em andamento · entra na receita quando o orçamento for aprovado
+                ou o negócio for fechado
+              </small>
+            </Link>
+          )}
+          <div className="adm-revenue">
+            {revenue.map((r) => (
+              <div key={r.label} className="adm-revenue-item">
+                <span>{r.label}</span>
+                <strong>{money(r.total)}</strong>
+                <span className="adm-bar-track" title={`${r.label}: ${money(r.total)}`}>
+                  {r.total > 0 && <span className="adm-bar" style={{ width: `${(r.total / revenueMax) * 100}%` }} />}
+                </span>
+                <small>
+                  {r.qty} venda{r.qty === 1 ? "" : "s"}
+                  {revenueTotal > 0 && r.total > 0 && ` · ${Math.round((r.total / revenueTotal) * 100)}%`}
+                </small>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="adm-grid-2">
         <section className="adm-card">

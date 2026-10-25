@@ -65,3 +65,9 @@ export function InvoiceBadge({ status, number }: { status: string; number?: stri
     </span>
   );
 }
+
+/** Situação de um documento do projeto. */
+export function DocumentBadge({ status }: { status: string }) {
+  const label = { rascunho: "Rascunho", enviado: "Enviado", visualizado: "Visualizado", aprovado: "Aprovado", ajustes: "Ajustes pedidos", cancelado: "Cancelado" }[status] ?? status;
+  return <span className={`adm-badge doc-${status}`}>{label}</span>;
+}

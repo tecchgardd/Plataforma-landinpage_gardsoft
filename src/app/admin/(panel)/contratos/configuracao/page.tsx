@@ -2,14 +2,14 @@ import Link from "next/link";
 import ActionForm from "@/components/admin/ActionForm";
 import { Input, TextArea } from "@/components/admin/Fields";
 import PageHeader from "@/components/admin/PageHeader";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { contractVariables, defaultClauses, defaultPreamble, getFinanceSettings } from "@/lib/finance/settings";
 import { saveContractTemplate } from "../../../_actions/settings";
 
 export const metadata = { title: "Configuração CT" };
 
 export default async function ContractTemplatePage() {
-  await requireUser();
+  await requireAccess("empresa", 1);
   const settings = await getFinanceSettings();
   const { contract, quote } = settings;
 

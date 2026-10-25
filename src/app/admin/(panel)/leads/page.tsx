@@ -3,7 +3,7 @@ import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import { TempBadge } from "@/components/admin/Badges";
 import { Owner } from "@/components/admin/Avatar";
 import { prisma, type Prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { dateTime, money, phoneLink } from "@/lib/admin/format";
 import { labelOf, leadGroups, leadSources, leadStatuses, temperatures } from "@/lib/admin/options";
 import { parseMonth } from "@/lib/admin/month";
@@ -14,7 +14,7 @@ export const metadata = { title: "Leads" };
 type Search = { q?: string; grupo?: string; status?: string; temperatura?: string; campanha?: string; mes?: string };
 
 export default async function LeadsPage({ searchParams }: { searchParams: Promise<Search> }) {
-  await requireUser();
+  await requireAccess("leads", 1);
   const params = await searchParams;
 
   // Filtros que valem para todas as abas (busca, temperatura, campanha, mês).
@@ -151,13 +151,13 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             <thead>
               <tr>
                 <th>Lead</th>
-                <th>Interesse</th>
+                <th className="opt">Interesse</th>
                 <th>Temperatura</th>
                 <th>Status</th>
-                <th>Origem</th>
+                <th className="opt">Origem</th>
                 <th>Atendido por</th>
                 <th className="num">Valor</th>
-                <th>Chegou em</th>
+                <th className="opt">Chegou em</th>
                 <th>
                   <span className="sr-only">Ações</span>
                 </th>
@@ -172,16 +172,20 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
                       <Link href={`/admin/leads/${lead.id}`} className="adm-row-link">
                         <strong>{lead.name}</strong>
                         <small>{lead.company ?? lead.phone ?? lead.email ?? ""}</small>
+                        {/* Em telas estreitas as colunas secundárias somem e o resumo aparece aqui. */}
+                        <small className="adm-compact-only">
+                          {[lead.service, labelOf(leadSources, lead.source), dateTime(lead.createdAt)].filter(Boolean).join(" · ")}
+                        </small>
                       </Link>
                     </td>
-                    <td>{lead.service ?? "—"}</td>
+                    <td className="opt">{lead.service ?? "—"}</td>
                     <td>
                       <TempBadge value={lead.temperature} />
                     </td>
                     <td>
                       <StatusSelect id={lead.id} value={lead.status} name={lead.name} />
                     </td>
-                    <td>
+                    <td className="opt">
                       {labelOf(leadSources, lead.source)}
                       {lead.campaign && <small className="adm-sub">{lead.campaign.name}</small>}
                     </td>
@@ -189,7 +193,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
                       <Owner user={lead.owner} />
                     </td>
                     <td className="num">{lead.valueCents ? money(lead.valueCents) : "—"}</td>
-                    <td>{dateTime(lead.createdAt)}</td>
+                    <td className="opt">{dateTime(lead.createdAt)}</td>
                     <td>
                       <div className="adm-row-actions">
                         {lead.status === "perdido" && <RecoverButton id={lead.id} />}

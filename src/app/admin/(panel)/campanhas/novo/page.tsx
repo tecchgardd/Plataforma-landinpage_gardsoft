@@ -1,13 +1,13 @@
 import ActionForm from "@/components/admin/ActionForm";
 import PageHeader from "@/components/admin/PageHeader";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { saveCampaign } from "../../../_actions/campaigns";
 import CampaignFields from "../CampaignFields";
 
 export const metadata = { title: "Nova campanha" };
 
 export default async function NewCampaignPage() {
-  await requireUser();
+  await requireAccess("campanhas", 2);
   return (
     <>
       <PageHeader title="Nova campanha" back={{ href: "/admin/campanhas", label: "Campanhas" }} />

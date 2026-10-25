@@ -1,7 +1,7 @@
 import ActionForm from "@/components/admin/ActionForm";
 import PageHeader from "@/components/admin/PageHeader";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { asaasConfigured } from "@/lib/integrations/asaas";
 import { emailConfigured } from "@/lib/integrations/email";
 import { saveEntry } from "../../../../_actions/finance";
@@ -10,7 +10,7 @@ import EntryFields from "../../EntryFields";
 export const metadata = { title: "Nova cobrança" };
 
 export default async function NewChargePage() {
-  await requireUser();
+  await requireAccess("financeiro", 2);
   const [clients, projects] = await Promise.all([
     prisma.client.findMany({ select: { id: true, name: true, company: true }, orderBy: { name: "asc" } }),
     prisma.project.findMany({ select: { id: true, name: true }, orderBy: { createdAt: "desc" } }),

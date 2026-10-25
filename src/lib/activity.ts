@@ -13,7 +13,11 @@ export type Entity =
   | "contrato"
   | "financeiro"
   | "notafiscal"
-  | "comercial";
+  | "comercial"
+  | "documento"
+  | "acesso"
+  | "meta"
+  | "integracao";
 
 /**
  * Registra uma ação no histórico do portal.

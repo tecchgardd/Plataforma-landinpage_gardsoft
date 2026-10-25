@@ -1,7 +1,7 @@
 import ActionForm from "@/components/admin/ActionForm";
 import PageHeader from "@/components/admin/PageHeader";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { getFinanceSettings } from "@/lib/finance/settings";
 import { saveInvoice } from "../../../_actions/invoices";
 import InvoiceFields from "../InvoiceFields";
@@ -10,7 +10,7 @@ import { invoiceOptions } from "../options";
 export const metadata = { title: "Registrar nota fiscal" };
 
 export default async function NewInvoicePage({ searchParams }: { searchParams: Promise<{ lancamento?: string }> }) {
-  await requireUser();
+  await requireAccess("notas", 2);
   const { lancamento } = await searchParams;
   const entryId = lancamento && /^[0-9a-f-]{36}$/i.test(lancamento) ? lancamento : null;
   const [options, settings, entry] = await Promise.all([

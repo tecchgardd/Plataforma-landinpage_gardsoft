@@ -1,16 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { logActivity } from "@/lib/activity";
 import { firstError, formObject, type FormState } from "@/lib/admin/form";
+import type { ModuleKey } from "@/lib/permissions";
 import { financeSettingsSchema, saveSettingsSection, type FinanceSettings } from "@/lib/finance/settings";
 
 const num = (v: string | undefined) => Number((v ?? "0").replace(",", ".")) || 0;
 
-/** Valida e salva uma seção; cada tela do Comercial edita a sua. */
+/** Módulo que pode editar cada seção das configurações. */
+const sectionModule: Partial<Record<keyof FinanceSettings, ModuleKey>> = { company: "empresa", billing: "financeiro", invoice: "notas" };
+
+/** Valida e salva uma seção; cada tela edita a sua. */
 async function save<K extends keyof FinanceSettings>(section: K, raw: unknown, summary: string): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess(sectionModule[section] ?? "empresa", 2);
   const parsed = financeSettingsSchema.shape[section].safeParse(raw);
   if (!parsed.success) return { error: firstError(parsed.error) };
   await saveSettingsSection(section, parsed.data as FinanceSettings[K]);
@@ -29,7 +33,7 @@ export async function saveCompanyProfile(_: FormState, formData: FormData): Prom
 
 /** Configuração CT: modelo de contrato e padrões do orçamento, validados juntos antes de salvar. */
 export async function saveContractTemplate(_: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("empresa", 2);
   const f = formObject(formData);
   const contract = financeSettingsSchema.shape.contract.safeParse({
     preamble: f.preamble ?? "",

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma, Prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { logActivity } from "@/lib/activity";
 import { contentSchemas, type ContentKey } from "@/lib/content-schema";
 import type { FormState } from "@/lib/admin/form";
@@ -15,7 +15,7 @@ function isKey(key: string): key is ContentKey {
 }
 
 export async function saveContent(key: string, json: string): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("conteudo", 2);
   if (!isKey(key)) return { error: "Seção desconhecida." };
   let raw: unknown;
   try {
@@ -39,7 +39,7 @@ export async function saveContent(key: string, json: string): Promise<FormState>
 
 /** Volta a seção para o texto padrão do código. */
 export async function resetContent(key: string): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireAccess("conteudo", 2);
   if (!isKey(key)) return { error: "Seção desconhecida." };
   await prisma.content.deleteMany({ where: { key } });
   await logActivity(user, "editou", "conteudo", `Restaurou o texto padrão da seção "${sectionTitle(key)}"`, key);

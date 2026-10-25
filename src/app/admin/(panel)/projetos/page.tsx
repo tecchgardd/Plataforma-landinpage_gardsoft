@@ -3,18 +3,20 @@ import { z } from "zod";
 import PageHeader from "@/components/admin/PageHeader";
 import ActionForm, { ConfirmButton } from "@/components/admin/ActionForm";
 import Avatar from "@/components/admin/Avatar";
-import { StageBadge, StatusBadge } from "@/components/admin/Badges";
+import { DocumentBadge, StageBadge, StatusBadge } from "@/components/admin/Badges";
 import Files from "@/components/admin/Files";
 import { fromDbDate, prisma } from "@/lib/prisma";
 import { getTeam } from "@/lib/activity";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { money, shortDate } from "@/lib/admin/format";
 import { projectStages } from "@/lib/admin/options";
+import { typeOf } from "@/lib/documents";
 import { deleteProject, deleteProjectFile, saveProject, uploadProjectFile } from "../../_actions/projects";
 import Board, { type Card } from "./Board";
 import ModalShell from "./ModalShell";
 import ProjectFields from "./ProjectFields";
 import { Checklist, Updates } from "./ProjectParts";
+import Can from "@/components/admin/Can";
 
 export const metadata = { title: "Projetos" };
 
@@ -27,7 +29,7 @@ const linkLabels = [
 ] as const;
 
 export default async function ProjectsPage({ searchParams }: { searchParams: Promise<{ projeto?: string }> }) {
-  await requireUser();
+  await requireAccess("projetos", 1);
   const { projeto } = await searchParams;
   const openId = projeto && z.uuid().safeParse(projeto).success ? projeto : null;
   const today = new Date().toISOString().slice(0, 10);
@@ -52,6 +54,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
             tasks: { orderBy: [{ position: "asc" }, { createdAt: "asc" }] },
             updates: { orderBy: { createdAt: "desc" }, take: 100 },
             files: { select: { id: true, name: true, label: true, size: true, mime: true, createdAt: true }, orderBy: { createdAt: "desc" } },
+            projectDocuments: { select: { id: true, number: true, title: true, type: true, status: true, version: true }, orderBy: { updatedAt: "desc" } },
           },
         })
       : null,
@@ -165,13 +168,44 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
                   suggestions={["Briefing", "Contrato", "Layout aprovado", "Logo e identidade", "Textos do cliente", "Acessos"]}
                 />
               </section>
-              <ConfirmButton
-                action={deleteProject.bind(null, open.id)}
-                confirm="Excluir este projeto, o checklist, as atualizações e os anexos?"
-                className="adm-btn danger ghost"
-              >
-                Excluir projeto
-              </ConfirmButton>
+              <Can module="documentos" level={1}>
+                <section>
+                  <div className="adm-card-head">
+                    <h3>Documentos oficiais</h3>
+                    <Can module="documentos" level={2}>
+                      <Link href={`/admin/documentos/novo?projeto=${open.id}`}>+ Novo</Link>
+                    </Can>
+                  </div>
+                  {open.projectDocuments.length === 0 ? (
+                    <p className="adm-card-sub">Termo de abertura, escopo, MER, aprovação de layout… nenhum ainda.</p>
+                  ) : (
+                    <ul className="adm-list compact">
+                      {open.projectDocuments.map((d) => (
+                        <li key={d.id}>
+                          <Link href={`/admin/documentos/${d.id}`}>
+                            <span>
+                              <strong>{typeOf(d.type).short}</strong>
+                              <small>
+                                {d.number} · v{d.version}
+                              </small>
+                            </span>
+                            <DocumentBadge status={d.status} />
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              </Can>
+              <Can module="projetos" level={3}>
+                <ConfirmButton
+                  action={deleteProject.bind(null, open.id)}
+                  confirm="Excluir este projeto, o checklist, as atualizações e os anexos?"
+                  className="adm-btn danger ghost"
+                >
+                  Excluir projeto
+                </ConfirmButton>
+              </Can>
             </aside>
           </div>
         </ModalShell>

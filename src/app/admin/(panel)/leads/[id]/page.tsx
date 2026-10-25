@@ -6,16 +6,17 @@ import PageHeader from "@/components/admin/PageHeader";
 import { StatusBadge } from "@/components/admin/Badges";
 import { prisma } from "@/lib/prisma";
 import { getTeam } from "@/lib/activity";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { dateTime, phoneLink } from "@/lib/admin/format";
 import { convertLead, deleteLead, saveLead } from "../../../_actions/leads";
 import LeadFields from "../LeadFields";
 import TempSwitch from "./TempSwitch";
+import Can from "@/components/admin/Can";
 
 export const metadata = { title: "Lead" };
 
 export default async function LeadPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireUser();
+  await requireAccess("leads", 1);
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
   const [lead, campaigns, team] = await Promise.all([
@@ -105,9 +106,11 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
             </section>
           )}
 
-          <ConfirmButton action={deleteLead.bind(null, lead.id)} confirm="Excluir este lead definitivamente?" className="adm-btn danger ghost">
-            Excluir lead
-          </ConfirmButton>
+          <Can module="leads" level={3}>
+            <ConfirmButton action={deleteLead.bind(null, lead.id)} confirm="Excluir este lead definitivamente?" className="adm-btn danger ghost">
+              Excluir lead
+            </ConfirmButton>
+          </Can>
         </aside>
       </div>
     </>

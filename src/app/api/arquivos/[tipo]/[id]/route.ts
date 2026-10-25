@@ -1,17 +1,21 @@
-import { headers } from "next/headers";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { getAccess } from "@/lib/access";
+import type { ModuleKey } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+
+/** Módulo que precisa ser visível para baixar cada tipo de arquivo. */
+const moduleOf: Record<string, ModuleKey> = { cliente: "clientes", projeto: "projetos", financeiro: "financeiro", notafiscal: "notas", documento: "documentos" };
 
 /**
  * Download dos documentos de clientes, projetos, lançamentos e notas fiscais.
- * Diferente das imagens do site, exige sessão: são documentos internos.
+ * Diferente das imagens do site, exige sessão e acesso ao módulo: são documentos internos.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ tipo: string; id: string }> }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  const access = await getAccess();
+  if (!access) return new Response("Unauthorized", { status: 401 });
 
   const { tipo, id } = await params;
+  if (!moduleOf[tipo] || access.level(moduleOf[tipo]) < 1) return new Response("Forbidden", { status: 403 });
   if (!z.uuid().safeParse(id).success) return new Response("Not found", { status: 404 });
   const select = { name: true, mime: true, data: true } as const;
   const file =
@@ -23,7 +27,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ tipo
           ? await prisma.financeFile.findUnique({ where: { id }, select })
           : tipo === "notafiscal"
             ? await prisma.invoiceFile.findUnique({ where: { id }, select })
-            : null;
+            : tipo === "documento"
+              ? await prisma.documentFile.findUnique({ where: { id }, select })
+              : null;
   if (!file) return new Response("Not found", { status: 404 });
 
   // PDF e imagens abrem no navegador; o resto baixa.

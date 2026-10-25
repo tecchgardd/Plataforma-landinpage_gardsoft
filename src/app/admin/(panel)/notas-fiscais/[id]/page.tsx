@@ -8,12 +8,13 @@ import Files from "@/components/admin/Files";
 import PageHeader from "@/components/admin/PageHeader";
 import { InvoiceBadge } from "@/components/admin/Badges";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireAccess } from "@/lib/access";
 import { dateTime, money, shortDate } from "@/lib/admin/format";
 import { formatCpfCnpj } from "@/lib/finance/document";
 import { cancelInvoice, deleteInvoice, deleteInvoiceFile, saveInvoice, syncInvoice, uploadInvoiceFile } from "../../../_actions/invoices";
 import InvoiceFields from "../InvoiceFields";
 import { invoiceOptions } from "../options";
+import Can from "@/components/admin/Can";
 
 export const metadata = { title: "Nota fiscal" };
 
@@ -28,7 +29,7 @@ const asaasLabel: Record<string, string> = {
 };
 
 export default async function InvoicePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ erro?: string }> }) {
-  await requireUser();
+  await requireAccess("notas", 1);
   const [{ id }, { erro }] = await Promise.all([params, searchParams]);
   if (!z.uuid().safeParse(id).success) notFound();
   const invoice = await prisma.invoice.findUnique({
@@ -198,9 +199,11 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
             />
           </section>
           {!fromAsaas && (
-            <ConfirmButton action={deleteInvoice.bind(null, invoice.id)} confirm="Excluir o registro desta nota? (Isto não cancela a nota na prefeitura.)" className="adm-btn danger ghost">
-              Excluir registro
-            </ConfirmButton>
+            <Can module="notas" level={3}>
+              <ConfirmButton action={deleteInvoice.bind(null, invoice.id)} confirm="Excluir o registro desta nota? (Isto não cancela a nota na prefeitura.)" className="adm-btn danger ghost">
+                Excluir registro
+              </ConfirmButton>
+            </Can>
           )}
         </aside>
       </div>
