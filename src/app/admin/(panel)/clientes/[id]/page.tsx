@@ -9,7 +9,8 @@ import Files from "@/components/admin/Files";
 import { prisma } from "@/lib/prisma";
 import { getTeam } from "@/lib/activity";
 import { requireAccess } from "@/lib/access";
-import { money, phoneLink, shortDate } from "@/lib/admin/format";
+import { phoneLink, shortDate } from "@/lib/admin/format";
+import QuoteList, { quoteListSelect } from "@/components/admin/QuoteList";
 import { deleteClient, deleteClientFile, saveClient, uploadClientFile } from "../../../_actions/clients";
 import ClientFields from "../ClientFields";
 import Can from "@/components/admin/Can";
@@ -36,6 +37,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
         owner: { select: { name: true, image: true } },
         projects: { orderBy: { createdAt: "desc" } },
         leads: { orderBy: { createdAt: "desc" } },
+        quotes: { select: quoteListSelect, orderBy: { createdAt: "desc" } },
         files: {
           select: { id: true, name: true, label: true, size: true, mime: true, createdAt: true },
           orderBy: { createdAt: "desc" },
@@ -46,7 +48,6 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
   ]);
   if (!client) notFound();
   const wa = phoneLink(client.phone);
-  const total = client.projects.reduce((s, p) => s + p.valueCents, 0);
 
   return (
     <>
@@ -98,7 +99,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
           <section className="adm-card">
             <div className="adm-card-head">
               <h2>Projetos</h2>
-              <b>{money(total)}</b>
+              <b>{client.projects.length}</b>
             </div>
             {client.projects.length === 0 ? (
               <Empty title="Nenhum projeto ainda" />
@@ -109,7 +110,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                     <Link href={`/admin/projetos?projeto=${p.id}`}>
                       <span>
                         <strong>{p.name}</strong>
-                        <small>{money(p.valueCents)}</small>
+                        <small>{p.service ?? `Desde ${shortDate(p.createdAt)}`}</small>
                       </span>
                       <StageBadge value={p.stage} />
                     </Link>
@@ -117,6 +118,13 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                 ))}
               </ul>
             )}
+          </section>
+          <section className="adm-card">
+            <div className="adm-card-head">
+              <h2>Orçamentos</h2>
+              <Link href={`/admin/orcamentos/novo?cliente=${client.id}`}>+ Novo</Link>
+            </div>
+            <QuoteList quotes={client.quotes} empty="Nenhum orçamento ainda. Os valores do cliente ficam no documento do orçamento." />
           </section>
           {client.leads.length > 0 && (
             <section className="adm-card">

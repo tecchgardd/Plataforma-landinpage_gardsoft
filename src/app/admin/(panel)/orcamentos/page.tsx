@@ -2,9 +2,11 @@ import Link from "next/link";
 import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import { QuoteBadge } from "@/components/admin/Badges";
 import { prisma, type Prisma } from "@/lib/prisma";
-import { requireAccess } from "@/lib/access";
+import { getAccess, requireAccess } from "@/lib/access";
 import { dateTime, money, shortDate } from "@/lib/admin/format";
 import { quoteStatuses } from "@/lib/admin/options";
+import { quoteUrl } from "@/lib/finance/quote";
+import { QuoteMenu } from "./RowActions";
 
 export const metadata = { title: "Orçamentos" };
 
@@ -16,6 +18,9 @@ const views = [
 
 export default async function QuotesPage({ searchParams }: { searchParams: Promise<{ status?: string; q?: string }> }) {
   await requireAccess("orcamentos", 1);
+  const access = await getAccess();
+  const level = access?.level("orcamentos") ?? 0;
+  const canContract = (access?.level("contratos") ?? 0) >= 2;
   const sp = await searchParams;
   const view = views.find((v) => v.value === sp.status)?.value;
   const today = new Date(`${new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)}T00:00:00Z`);
@@ -39,7 +44,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
   const [quotes, draftSum, openSum, decidedMonth] = await Promise.all([
     prisma.quote.findMany({
       where,
-      include: { client: { select: { name: true, company: true } }, lead: { select: { name: true, company: true } }, contract: { select: { number: true } } },
+      include: { client: { select: { name: true, company: true } }, lead: { select: { name: true, company: true } }, contract: { select: { id: true, number: true } } },
       orderBy: { createdAt: "desc" },
       take: 300,
     }),
@@ -117,6 +122,9 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
                 <th>Validade</th>
                 <th>Situação</th>
                 <th>Última movimentação</th>
+                <th>
+                  <span className="sr-only">Ações</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -150,6 +158,15 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
                           : o.sentAt
                             ? `Enviado ${dateTime(o.sentAt)}`
                             : `Criado ${dateTime(o.createdAt)}`}
+                    </td>
+                    <td>
+                      <div className="adm-row-actions">
+                        <QuoteMenu
+                          quote={{ id: o.id, number: o.number, status: o.status, link: o.sentAt ? quoteUrl(o.token) : null, contract: o.contract }}
+                          level={level}
+                          canContract={canContract}
+                        />
+                      </div>
                     </td>
                   </tr>
                 );

@@ -13,7 +13,11 @@ export default async function CampaignsPage() {
   await requireAccess("campanhas", 1);
   const canEdit = ((await getAccess())?.level("campanhas") ?? 0) >= 2;
   const campaigns = await prisma.campaign.findMany({
-    include: { leads: { select: { temperature: true, status: true, valueCents: true } } },
+    include: {
+      leads: {
+        select: { temperature: true, status: true, valueCents: true, quotes: { where: { status: "aprovado" }, select: { totalCents: true } } },
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
   const rows = campaigns.map(({ leads, ...campaign }) => {
@@ -23,7 +27,8 @@ export default async function CampaignsPage() {
       leads: leads.length,
       hot: leads.filter((l) => l.temperature === "quente").length,
       closed: closed.length,
-      revenue: closed.reduce((s, l) => s + l.valueCents, 0),
+      // Valor do orçamento aprovado (o valor antigo do lead só para registros de antes dessa regra).
+      revenue: closed.reduce((s, l) => s + (l.quotes.reduce((t, q) => t + q.totalCents, 0) || l.valueCents), 0),
     };
   });
 

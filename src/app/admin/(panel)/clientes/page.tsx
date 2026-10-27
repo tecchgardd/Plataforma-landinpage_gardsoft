@@ -1,9 +1,11 @@
 import Link from "next/link";
 import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import { Owner } from "@/components/admin/Avatar";
+import { QuoteBadge } from "@/components/admin/Badges";
 import { prisma } from "@/lib/prisma";
-import { requireAccess } from "@/lib/access";
-import { money, phoneLink } from "@/lib/admin/format";
+import { getAccess, requireAccess } from "@/lib/access";
+import { phoneLink } from "@/lib/admin/format";
+import { ClientMenu } from "./RowActions";
 
 export const metadata = { title: "Clientes" };
 
@@ -17,6 +19,13 @@ function formatDocument(doc: string | null) {
 
 export default async function ClientsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   await requireAccess("clientes", 1);
+  const access = await getAccess();
+  const level = access?.level("clientes") ?? 0;
+  const can = {
+    projects: (access?.level("projetos") ?? 0) >= 2,
+    quotes: (access?.level("orcamentos") ?? 0) >= 2,
+    contracts: (access?.level("contratos") ?? 0) >= 2,
+  };
   const q = (await searchParams).q?.trim();
   const like = { contains: q ?? "", mode: "insensitive" as const };
   const clients = await prisma.client.findMany({
@@ -24,9 +33,10 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
       ? { OR: [{ name: like }, { company: like }, { email: like }, { phone: like }, { document: like }, { city: like }] }
       : undefined,
     include: {
-      projects: { select: { valueCents: true } },
+      // Valores ficam só no documento do orçamento: na lista aparece o último orçamento vinculado.
+      quotes: { select: { id: true, number: true, status: true, validUntil: true }, orderBy: { createdAt: "desc" }, take: 1 },
+      _count: { select: { files: true, projects: true } },
       owner: { select: { name: true, image: true } },
-      _count: { select: { files: true } },
     },
     orderBy: { createdAt: "desc" },
     take: 300,
@@ -63,6 +73,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
                 <th>E-mail</th>
                 <th>Atendido por</th>
                 <th className="num">Projetos</th>
+                <th>Orçamento</th>
                 <th>
                   <span className="sr-only">Ações</span>
                 </th>
@@ -71,7 +82,8 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
             <tbody>
               {clients.map((client) => {
                 const wa = phoneLink(client.phone);
-                const total = client.projects.reduce((s, p) => s + p.valueCents, 0);
+                const quote = client.quotes[0] ?? null;
+                const label = client.company ?? client.name;
                 return (
                   <tr key={client.id}>
                     <td>
@@ -93,9 +105,16 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
                     <td>
                       <Owner user={client.owner} />
                     </td>
-                    <td className="num">
-                      {client.projects.length}
-                      {total > 0 && <small className="adm-sub">{money(total)}</small>}
+                    <td className="num">{client._count.projects}</td>
+                    <td>
+                      {quote ? (
+                        <Link href={`/admin/orcamentos/${quote.id}`} className="adm-doc-link" scroll={false}>
+                          <span className="adm-mono">{quote.number}</span>
+                          <QuoteBadge status={quote.status} validUntil={quote.validUntil} />
+                        </Link>
+                      ) : (
+                        "—"
+                      )}
                     </td>
                     <td>
                       <div className="adm-row-actions">
@@ -106,6 +125,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
                             </svg>
                           </a>
                         )}
+                        <ClientMenu client={{ id: client.id, label, email: client.email, whatsapp: wa, quote }} level={level} can={can} />
                       </div>
                     </td>
                   </tr>

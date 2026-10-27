@@ -1,6 +1,5 @@
 import { Input, Select, TextArea } from "@/components/admin/Fields";
 import { fromDbDate, type Client, type Project } from "@/lib/prisma";
-import { moneyInput } from "@/lib/admin/format";
 import { projectStages, serviceOptions } from "@/lib/admin/options";
 
 export default function ProjectFields({
@@ -35,7 +34,6 @@ export default function ProjectFields({
         />
         <Select label="Serviço" name="service" options={serviceOptions} defaultValue={project?.service} empty="Não definido" />
         <Select label="Etapa" name="stage" options={projectStages} defaultValue={project?.stage ?? "briefing"} />
-        <Input label="Valor (R$)" name="value" inputMode="decimal" placeholder="0,00" defaultValue={moneyInput(project?.valueCents)} />
         <Input label="Início" name="startDate" type="date" defaultValue={fromDbDate(project?.startDate)} />
         <Input label="Entrega prevista" name="dueDate" type="date" defaultValue={fromDbDate(project?.dueDate)} />
       </fieldset>

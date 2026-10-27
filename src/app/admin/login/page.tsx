@@ -11,7 +11,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <AuthCard title="Bem-vindo de volta" subtitle="Entre para gerenciar o site, os leads e os projetos.">
       {expired && (
-        <p role="status" className="adm-msg auth-expired">
+        <p role="status" className="login-expired">
           Sua sessão expirou (o acesso vale por 4 horas). Entre novamente para continuar.
         </p>
       )}

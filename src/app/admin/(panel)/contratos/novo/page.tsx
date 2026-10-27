@@ -16,7 +16,16 @@ export default async function NewContractPage({ searchParams }: { searchParams: 
     prisma.project.findMany({ select: { id: true, name: true }, orderBy: { createdAt: "desc" } }),
     getFinanceSettings(),
     projeto && /^[0-9a-f-]{36}$/i.test(projeto)
-      ? prisma.project.findUnique({ where: { id: projeto }, select: { id: true, name: true, clientId: true, description: true, valueCents: true, service: true } })
+      ? prisma.project.findUnique({ where: { id: projeto }, select: {
+            id: true,
+            name: true,
+            clientId: true,
+            description: true,
+            valueCents: true,
+            service: true,
+            quotes: { where: { status: "aprovado" }, select: { totalCents: true }, orderBy: { decidedAt: "desc" }, take: 1 },
+          },
+        })
       : null,
   ]);
 
@@ -40,7 +49,7 @@ export default async function NewContractPage({ searchParams }: { searchParams: 
               scope: project?.description ?? "",
               clauses: settings.contract.clauses,
               deliveryDays: settings.contract.deliveryDays || null,
-              valueCents: project?.valueCents ?? 0,
+              valueCents: project?.quotes[0]?.totalCents ?? project?.valueCents ?? 0,
               paymentPlan: [],
             }}
           />

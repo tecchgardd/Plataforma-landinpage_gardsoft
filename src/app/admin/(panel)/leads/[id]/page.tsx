@@ -11,6 +11,7 @@ import { dateTime, phoneLink } from "@/lib/admin/format";
 import { convertLead, deleteLead, saveLead } from "../../../_actions/leads";
 import LeadFields from "../LeadFields";
 import TempSwitch from "./TempSwitch";
+import QuoteList, { quoteListSelect } from "@/components/admin/QuoteList";
 import Can from "@/components/admin/Can";
 
 export const metadata = { title: "Lead" };
@@ -20,7 +21,7 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
   const [lead, campaigns, team] = await Promise.all([
-    prisma.lead.findUnique({ where: { id } }),
+    prisma.lead.findUnique({ where: { id }, include: { quotes: { select: quoteListSelect, orderBy: { createdAt: "desc" } } } }),
     prisma.campaign.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
     getTeam(),
   ]);
@@ -67,8 +68,8 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
           </section>
 
           <section className="adm-card">
-            <h2>Proposta</h2>
-            <p className="adm-card-sub">Monte um orçamento com os serviços e valores e envie o link para o lead aprovar.</p>
+            <h2>Orçamentos</h2>
+            <QuoteList quotes={lead.quotes} empty="Monte um orçamento com os serviços e valores e envie o link para o lead aprovar." />
             <Link href={`/admin/orcamentos/novo?lead=${lead.id}`} className="adm-btn ghost">
               + Orçamento
             </Link>

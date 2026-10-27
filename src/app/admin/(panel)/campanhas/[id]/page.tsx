@@ -25,14 +25,19 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
   if (!z.uuid().safeParse(id).success) notFound();
   const [campaign, leads] = await Promise.all([
     prisma.campaign.findUnique({ where: { id }, include: { costs: { orderBy: { createdAt: "asc" } } } }),
-    prisma.lead.findMany({ where: { campaignId: id }, orderBy: { createdAt: "desc" } }),
+    prisma.lead.findMany({
+      where: { campaignId: id },
+      include: { quotes: { where: { status: "aprovado" }, select: { totalCents: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
   if (!campaign) notFound();
 
   const h = await headers();
   const origin = process.env.BETTER_AUTH_URL ? siteUrl : `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
   const closed = leads.filter((l) => l.status === "fechado");
-  const revenue = closed.reduce((s, l) => s + l.valueCents, 0);
+  // Valor do orçamento aprovado (o valor antigo do lead só para registros de antes dessa regra).
+  const revenue = closed.reduce((s, l) => s + (l.quotes.reduce((t, q) => t + q.totalCents, 0) || l.valueCents), 0);
 
   return (
     <>

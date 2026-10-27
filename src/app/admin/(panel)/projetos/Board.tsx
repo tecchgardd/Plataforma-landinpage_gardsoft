@@ -12,7 +12,8 @@ export type Card = {
   stage: string;
   client: string | null;
   owner: { name: string; image: string | null } | null;
-  value: string | null;
+  /** Número do orçamento vinculado (os valores ficam só no documento). */
+  quote: string | null;
   due: string | null;
   late: boolean;
   tasksDone: number;
@@ -117,7 +118,7 @@ export default function Board({ columns, cards: initial }: { columns: readonly C
                       {card.client && <small>{card.client}</small>}
                     </Link>
                     <div className="adm-task-meta">
-                      {card.value && <span>{card.value}</span>}
+                      {card.quote && <span className="adm-mono">📄 {card.quote}</span>}
                       {card.due && <span className={card.late ? "late" : ""}>{card.late ? "⚠ " : "📅 "}{card.due}</span>}
                       {card.tasksTotal > 0 && (
                         <span className={card.tasksDone === card.tasksTotal ? "done" : ""}>

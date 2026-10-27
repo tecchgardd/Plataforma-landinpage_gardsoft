@@ -1,6 +1,5 @@
 import { Input, Select, TextArea } from "@/components/admin/Fields";
 import type { Campaign, Lead } from "@/lib/prisma";
-import { moneyInput } from "@/lib/admin/format";
 import { leadSources, leadStatuses, serviceOptions, temperatures } from "@/lib/admin/options";
 
 export default function LeadFields({
@@ -34,13 +33,6 @@ export default function LeadFields({
         {!lead && <Select label="Temperatura" name="temperature" options={temperatures} defaultValue="morno" />}
         <Select label="Status" name="status" options={leadStatuses} defaultValue={lead?.status ?? "novo"} />
         <Select label="Serviço de interesse" name="service" options={serviceOptions} defaultValue={lead?.service} empty="Não definido" />
-        <Input
-          label="Valor estimado (R$)"
-          name="value"
-          inputMode="decimal"
-          placeholder="0,00"
-          defaultValue={moneyInput(lead?.valueCents)}
-        />
         <Select label="Origem" name="source" options={leadSources} defaultValue={lead?.source ?? "site"} />
         <Select
           label="Campanha"

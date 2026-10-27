@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, RedirectType } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAccess } from "@/lib/access";
@@ -54,7 +54,8 @@ export async function saveClient(id: string | null, _: FormState, formData: Form
   });
   await logActivity(user, "criou", "cliente", `Cadastrou o cliente ${label}`, created.id);
   revalidatePath("/admin", "layout");
-  redirect(`/admin/clientes/${created.id}`);
+  // replace: fechar a janela do cadastro volta para a lista, não para o formulário de cadastro.
+  redirect(`/admin/clientes/${created.id}`, RedirectType.replace);
 }
 
 export async function deleteClient(id: string) {

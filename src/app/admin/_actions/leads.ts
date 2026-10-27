@@ -1,12 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, RedirectType } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAccess } from "@/lib/access";
 import { logActivity } from "@/lib/activity";
-import { parseMoney } from "@/lib/admin/format";
 import { labelOf, leadSources, leadStatuses, temperatures, values } from "@/lib/admin/options";
 import { firstError, formObject, optionalText, optionalUuid, type FormState } from "@/lib/admin/form";
 
@@ -25,7 +24,6 @@ const leadSchema = z.object({
   // Ausente na ficha do lead: lá a temperatura muda pela troca rápida.
   temperature: z.enum(values(temperatures)).optional(),
   status: z.enum(values(leadStatuses)),
-  value: z.string().transform(parseMoney),
   campaignId: optionalUuid,
   ownerId: optionalText(60),
   notes: optionalText(4000),
@@ -35,10 +33,11 @@ export async function saveLead(id: string | null, _: FormState, formData: FormDa
   const user = await requireAccess("leads", 2);
   const parsed = leadSchema.safeParse(formObject(formData));
   if (!parsed.success) return { error: firstError(parsed.error) };
-  const { value, ...data } = parsed.data;
+  // Valores ficam só no orçamento (documento vinculado ao lead).
+  const data = parsed.data;
   if (id) {
     const before = await prisma.lead.findUnique({ where: { id }, select: { status: true } });
-    await prisma.lead.update({ where: { id }, data: { ...data, valueCents: value } });
+    await prisma.lead.update({ where: { id }, data });
     const statusChange =
       before && before.status !== data.status
         ? ` (status: ${labelOf(leadStatuses, before.status)} → ${labelOf(leadStatuses, data.status)})`
@@ -48,12 +47,13 @@ export async function saveLead(id: string | null, _: FormState, formData: FormDa
     return { success: "Lead atualizado." };
   }
   const created = await prisma.lead.create({
-    data: { ...data, valueCents: value, ownerId: data.ownerId ?? user.id },
+    data: { ...data, ownerId: data.ownerId ?? user.id },
     select: { id: true },
   });
   await logActivity(user, "criou", "lead", `Cadastrou o lead ${data.name}`, created.id);
   revalidatePath("/admin", "layout");
-  redirect(`/admin/leads/${created.id}`);
+  // replace: fechar a janela da ficha volta para a lista, não para o formulário de cadastro.
+  redirect(`/admin/leads/${created.id}`, RedirectType.replace);
 }
 
 export async function setLeadTemperature(id: string, temperature: string) {
@@ -126,12 +126,13 @@ export async function convertLead(id: string) {
         leadId: lead.id,
         ownerId,
         service: lead.service,
-        valueCents: lead.valueCents,
         description: lead.message,
         startDate: new Date(new Date().toISOString().slice(0, 10)),
       },
       select: { id: true },
     });
+    // Os orçamentos do lead (com os valores) passam a ser do projeto e do cliente.
+    await tx.quote.updateMany({ where: { leadId: lead.id, projectId: null }, data: { projectId: project.id, clientId } });
     await tx.projectNote.create({
       data: { projectId: project.id, kind: "sistema", author: user.name, text: `Projeto criado a partir do lead ${lead.name}.` },
     });

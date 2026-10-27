@@ -1,13 +1,13 @@
 import Link from "next/link";
 import PageHeader, { Empty } from "@/components/admin/PageHeader";
-import { TempBadge } from "@/components/admin/Badges";
+import { QuoteBadge, TempBadge } from "@/components/admin/Badges";
 import Avatar, { Owner } from "@/components/admin/Avatar";
 import { prisma, type Prisma } from "@/lib/prisma";
-import { requireAccess } from "@/lib/access";
-import { dateTime, money, phoneLink } from "@/lib/admin/format";
+import { getAccess, requireAccess } from "@/lib/access";
+import { dateTime, phoneLink } from "@/lib/admin/format";
 import { labelOf, leadGroups, leadSources, leadStatuses, temperatures } from "@/lib/admin/options";
 import { parseMonth } from "@/lib/admin/month";
-import { RecoverButton, StatusSelect } from "./RowActions";
+import { LeadMenu, RecoverButton, StatusSelect } from "./RowActions";
 
 export const metadata = { title: "Leads" };
 
@@ -15,6 +15,9 @@ type Search = { q?: string; grupo?: string; status?: string; temperatura?: strin
 
 export default async function LeadsPage({ searchParams }: { searchParams: Promise<Search> }) {
   await requireAccess("leads", 1);
+  const access = await getAccess();
+  const level = access?.level("leads") ?? 0;
+  const canQuote = (access?.level("orcamentos") ?? 0) >= 2;
   const params = await searchParams;
 
   // Filtros que valem para todas as abas (busca, temperatura, campanha, mês).
@@ -38,7 +41,12 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const [rows, counts, campaignList] = await Promise.all([
     prisma.lead.findMany({
       where: statusWhere ? { ...base, status: statusWhere } : base,
-      include: { campaign: { select: { name: true } }, owner: { select: { name: true, image: true } } },
+      include: {
+        campaign: { select: { name: true } },
+        owner: { select: { name: true, image: true } },
+        // Valores ficam só no documento do orçamento: na lista aparece o último orçamento vinculado.
+        quotes: { select: { id: true, number: true, status: true, validUntil: true }, orderBy: { createdAt: "desc" }, take: 1 },
+      },
       orderBy: { createdAt: "desc" },
       take: 300,
     }),
@@ -156,7 +164,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
                 <th>Status</th>
                 <th className="opt">Origem</th>
                 <th>Atendido por</th>
-                <th className="num">Valor</th>
+                <th>Orçamento</th>
                 <th className="opt">Chegou em</th>
                 <th>
                   <span className="sr-only">Ações</span>
@@ -166,6 +174,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             <tbody>
               {rows.map((lead) => {
                 const wa = phoneLink(lead.phone);
+                const quote = lead.quotes[0] ?? null;
                 return (
                   <tr key={lead.id} className={lead.status === "perdido" ? "is-muted" : ""}>
                     <td>
@@ -186,7 +195,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
                       <TempBadge value={lead.temperature} />
                     </td>
                     <td>
-                      <StatusSelect id={lead.id} value={lead.status} name={lead.name} />
+                      <StatusSelect id={lead.id} value={lead.status} name={lead.name} disabled={level < 2} />
                     </td>
                     <td className="opt">
                       {labelOf(leadSources, lead.source)}
@@ -195,11 +204,20 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
                     <td>
                       <Owner user={lead.owner} />
                     </td>
-                    <td className="num">{lead.valueCents ? money(lead.valueCents) : "—"}</td>
+                    <td>
+                      {quote ? (
+                        <Link href={`/admin/orcamentos/${quote.id}`} className="adm-doc-link" scroll={false}>
+                          <span className="adm-mono">{quote.number}</span>
+                          <QuoteBadge status={quote.status} validUntil={quote.validUntil} />
+                        </Link>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
                     <td className="opt">{dateTime(lead.createdAt)}</td>
                     <td>
                       <div className="adm-row-actions">
-                        {lead.status === "perdido" && <RecoverButton id={lead.id} />}
+                        {lead.status === "perdido" && level >= 2 && <RecoverButton id={lead.id} />}
                         {wa && (
                           <a
                             href={wa}
@@ -213,6 +231,11 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
                             </svg>
                           </a>
                         )}
+                        <LeadMenu
+                          lead={{ id: lead.id, name: lead.name, status: lead.status, email: lead.email, whatsapp: wa, clientId: lead.clientId, quote }}
+                          level={level}
+                          canQuote={canQuote}
+                        />
                       </div>
                     </td>
                   </tr>

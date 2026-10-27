@@ -8,6 +8,7 @@ import { leadStatuses, temperatures } from "@/lib/admin/options";
 import { dayInBrazil, parseMonth } from "@/lib/admin/month";
 import { salesBetween } from "@/lib/admin/revenue";
 import LeadsChart from "./LeadsChart";
+import MoneyToggle from "@/components/admin/MoneyToggle";
 
 export const metadata = { title: "Dashboard" };
 
@@ -49,8 +50,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     prisma.project.count({ where: { stage: { not: "no_ar" } } }),
     // Receita = só o que foi vendido no mês (orçamento aprovado, contrato assinado ou lead fechado).
     salesBetween(month.start, month.end),
-    // Em negociação: leads em andamento (ainda não são receita).
-    prisma.lead.findMany({ where: { status: { in: IN_PROGRESS } }, select: { valueCents: true, projects: { select: { valueCents: true } } } }),
+    // Em negociação: orçamentos enviados aguardando resposta, dentro da validade (ainda não são receita).
+    prisma.quote.aggregate({
+      where: { status: { in: ["enviado", "visualizado"] }, OR: [{ validUntil: null }, { validUntil: { gte: new Date(`${today}T00:00:00Z`) } }] },
+      _sum: { totalCents: true },
+      _count: { _all: true },
+    }),
     prisma.campaign.findMany({ select: { id: true, name: true, budgetCents: true, status: true } }),
   ]);
 
@@ -83,8 +88,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   if (others.length) revenue.push({ label: "Outros", total: others.reduce((s, p) => s + p.valueCents, 0), qty: others.length });
   const revenueTotal = soldProjects.reduce((s, p) => s + p.valueCents, 0);
   const revenueMax = Math.max(1, ...revenue.map((r) => r.total));
-  // Valor em negociação: o do lead ou, se não preenchido, o dos projetos já abertos para ele.
-  const negotiatingTotal = negotiating.reduce((sum, l) => sum + (l.valueCents || l.projects.reduce((t, p) => t + p.valueCents, 0)), 0);
+  const negotiatingTotal = negotiating._sum.totalCents ?? 0;
+  const negotiatingCount = negotiating._count._all;
 
   // ---------- gráfico e campanhas ----------
   const perDay = Array.from({ length: month.days }, () => 0);
@@ -129,6 +134,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         title={`Olá, ${firstName}!`}
         subtitle="Como estão os leads, a receita e as campanhas no mês."
         actions={
+          <>
+          {seesMoney && <MoneyToggle />}
           <nav className="adm-month" aria-label="Mês do relatório">
             <Link href={`/admin?mes=${month.prev}`} aria-label="Mês anterior">
               ←
@@ -142,6 +149,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               <span aria-hidden="true">→</span>
             )}
           </nav>
+          </>
         }
       />
 
@@ -166,19 +174,18 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             </div>
             <div className="adm-revenue-total">
               <small>Total</small>
-              <strong>{money(revenueTotal)}</strong>
+              <strong className="adm-money">{money(revenueTotal)}</strong>
               <small>
                 {soldProjects.length} projeto{soldProjects.length === 1 ? "" : "s"}
               </small>
             </div>
           </div>
-          {negotiating.length > 0 && (
-            <Link href="/admin/leads?grupo=andamento" className="adm-pipeline-note">
+          {negotiatingCount > 0 && (
+            <Link href="/admin/orcamentos?status=abertos" className="adm-pipeline-note">
               <span>Em negociação</span>
-              <strong>{money(negotiatingTotal)}</strong>
+              <strong className="adm-money">{money(negotiatingTotal)}</strong>
               <small>
-                {negotiating.length} lead{negotiating.length === 1 ? "" : "s"} em andamento · entra na receita quando o orçamento for aprovado
-                ou o negócio for fechado
+                {negotiatingCount} orçamento{negotiatingCount === 1 ? "" : "s"} aguardando resposta · entra na receita quando for aprovado
               </small>
             </Link>
           )}
@@ -186,8 +193,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             {revenue.map((r) => (
               <div key={r.label} className="adm-revenue-item">
                 <span>{r.label}</span>
-                <strong>{money(r.total)}</strong>
-                <span className="adm-bar-track" title={`${r.label}: ${money(r.total)}`}>
+                <strong className="adm-money">{money(r.total)}</strong>
+                <span className="adm-bar-track">
                   {r.total > 0 && <span className="adm-bar" style={{ width: `${(r.total / revenueMax) * 100}%` }} />}
                 </span>
                 <small>
@@ -273,7 +280,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                   <small>
                     {c.closed} fechado{c.closed === 1 ? "" : "s"}
                     {c.leads > 0 && ` · ${Math.round((c.closed / c.leads) * 100)}% de conversão`}
-                    {c.budget > 0 && c.leads > 0 && ` · ${money(Math.round(c.budget / c.leads))} por lead`}
+                    {c.budget > 0 && c.leads > 0 && (
+                      <>
+                        {" · "}
+                        <span className="adm-money">{money(Math.round(c.budget / c.leads))}</span> por lead
+                      </>
+                    )}
                   </small>
                 </li>
               ))}

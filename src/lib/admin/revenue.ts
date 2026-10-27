@@ -40,8 +40,8 @@ export async function salesBetween(start: Date, end: Date): Promise<Sale[]> {
     ];
     const soldAt = new Date(Math.min(...proofs.map((d) => d.getTime())));
     if (soldAt < start || soldAt >= end) continue;
-    // Valor do projeto; se não foi preenchido, o do orçamento aprovado ou do contrato assinado.
-    const valueCents = p.valueCents || p.quotes[0]?.totalCents || p.contracts[0]?.valueCents || 0;
+    // O valor vem do documento: orçamento aprovado, senão contrato assinado. O valor antigo do projeto só vale para registros de antes dessa regra.
+    const valueCents = p.quotes[0]?.totalCents || p.contracts[0]?.valueCents || p.valueCents || 0;
     sales.push({ projectId: p.id, service: p.service, valueCents, soldAt });
   }
   return sales;

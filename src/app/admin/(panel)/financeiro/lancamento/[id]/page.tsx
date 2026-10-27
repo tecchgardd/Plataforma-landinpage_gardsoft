@@ -40,8 +40,10 @@ export default async function EntryPage({ params, searchParams }: { params: Prom
       where: { id },
       include: {
         client: true,
-        project: { select: { id: true, name: true } },
-        contract: { select: { id: true, number: true } },
+        project: {
+          select: { id: true, name: true, quotes: { where: { status: "aprovado" }, select: { id: true, number: true }, orderBy: { decidedAt: "desc" }, take: 1 } },
+        },
+        contract: { select: { id: true, number: true, quote: { select: { id: true, number: true } } } },
         expense: { select: { id: true, name: true, frequency: true } },
         invoice: { select: { id: true, number: true, status: true, pdfUrl: true, xmlUrl: true } },
         files: { select: { id: true, name: true, label: true, size: true, mime: true, createdAt: true }, orderBy: { createdAt: "desc" } },
@@ -53,6 +55,8 @@ export default async function EntryPage({ params, searchParams }: { params: Prom
   if (!entry) notFound();
 
   const isIncome = entry.type === "receber";
+  // Documento de origem do valor: o orçamento do contrato ou, sem contrato, o aprovado do projeto.
+  const quote = entry.contract?.quote ?? entry.project?.quotes[0] ?? null;
   const today = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
   const pending = entry.status === "pendente";
   const asaas = asaasConfigured();
@@ -68,6 +72,12 @@ export default async function EntryPage({ params, searchParams }: { params: Prom
               <>
                 {" · "}
                 <Link href={`/admin/contratos/${entry.contract.id}`}>Contrato {entry.contract.number}</Link>
+              </>
+            )}
+            {quote && (
+              <>
+                {" · "}
+                <Link href={`/admin/orcamentos/${quote.id}`}>Orçamento {quote.number}</Link>
               </>
             )}
           </>
@@ -261,6 +271,12 @@ export default async function EntryPage({ params, searchParams }: { params: Prom
               )}
               <dt>Projeto</dt>
               <dd>{entry.project ? <Link href={`/admin/projetos?projeto=${entry.project.id}`}>{entry.project.name}</Link> : "—"}</dd>
+              {isIncome && (
+                <>
+                  <dt>Orçamento</dt>
+                  <dd>{quote ? <Link href={`/admin/orcamentos/${quote.id}`}>{quote.number}</Link> : "—"}</dd>
+                </>
+              )}
               {entry.installmentTotal && (
                 <>
                   <dt>Parcela</dt>

@@ -35,23 +35,36 @@ export default function LoginForm() {
   }
 
   return (
-    <form className="adm-form auth-form" onSubmit={onSubmit}>
-      <label className="adm-field wide">
-        <span className="adm-label">Usuário ou e-mail</span>
-        <input name="login" required autoComplete="username" autoCapitalize="none" spellCheck={false} autoFocus />
-      </label>
-      <label className="adm-field wide">
-        <span className="adm-label">Senha</span>
-        <input name="password" type="password" required autoComplete="current-password" />
-      </label>
-      <label className="adm-check wide">
+    <form className="login-form" onSubmit={onSubmit}>
+      <div className="login-textbox">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6" />
+        </svg>
+        <input id="login" name="login" required autoComplete="username" autoCapitalize="none" spellCheck={false} autoFocus />
+        <label htmlFor="login">Usuário ou e-mail</label>
+      </div>
+      <div className="login-textbox">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+          <rect x="5" y="10" width="14" height="11" rx="2.5" />
+          <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14.5v2.5" />
+        </svg>
+        <input id="password" name="password" type="password" required autoComplete="current-password" />
+        <label htmlFor="password">Senha</label>
+      </div>
+      <label className="login-remember">
         <input type="checkbox" name="remember" defaultChecked /> Manter conectado
       </label>
-      <button type="submit" className="adm-btn wide" disabled={pending}>
-        {pending ? "Entrando..." : "Entrar no portal"}
+      <button type="submit" className="login-submit" disabled={pending}>
+        <p>{pending ? "Entrando..." : "Entrar"}</p>
+        <span aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </span>
       </button>
       {error && (
-        <p role="alert" className="adm-msg error wide">
+        <p role="alert" className="login-error">
           {error}
         </p>
       )}

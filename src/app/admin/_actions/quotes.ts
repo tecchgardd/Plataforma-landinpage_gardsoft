@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, RedirectType } from "next/navigation";
 import { z } from "zod";
 import { prisma, toDbDate } from "@/lib/prisma";
 import { requireAccess } from "@/lib/access";
@@ -81,7 +81,8 @@ export async function saveQuote(id: string | null, _: FormState, formData: FormD
   });
   await logActivity(user, "criou", "orcamento", `Criou o orçamento ${number} — ${data.title} (${money(data.totalCents)})`, created.id);
   refresh();
-  redirect(`/admin/orcamentos/${created.id}`);
+  // replace: fechar a janela do orçamento volta para onde estava, não para o formulário de cadastro.
+  redirect(`/admin/orcamentos/${created.id}`, RedirectType.replace);
 }
 
 /** Envia o link de aprovação por e-mail com o PDF. Sem e-mail configurado, o link fica pronto para copiar. */

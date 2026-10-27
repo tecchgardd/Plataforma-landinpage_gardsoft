@@ -8,7 +8,8 @@ import Files from "@/components/admin/Files";
 import { fromDbDate, prisma } from "@/lib/prisma";
 import { getTeam } from "@/lib/activity";
 import { requireAccess } from "@/lib/access";
-import { money, shortDate } from "@/lib/admin/format";
+import { shortDate } from "@/lib/admin/format";
+import QuoteList, { quoteListSelect } from "@/components/admin/QuoteList";
 import { projectStages } from "@/lib/admin/options";
 import { typeOf } from "@/lib/documents";
 import { deleteProject, deleteProjectFile, saveProject, uploadProjectFile } from "../../_actions/projects";
@@ -41,6 +42,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
         owner: { select: { name: true, image: true } },
         tasks: { select: { done: true } },
         _count: { select: { files: true } },
+        quotes: { select: { number: true }, orderBy: { createdAt: "desc" }, take: 1 },
       },
       orderBy: [{ position: "asc" }, { createdAt: "asc" }],
     }),
@@ -55,6 +57,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
             updates: { orderBy: { createdAt: "desc" }, take: 100 },
             files: { select: { id: true, name: true, label: true, size: true, mime: true, createdAt: true }, orderBy: { createdAt: "desc" } },
             projectDocuments: { select: { id: true, number: true, title: true, type: true, status: true, version: true }, orderBy: { updatedAt: "desc" } },
+            quotes: { select: quoteListSelect, orderBy: { createdAt: "desc" } },
           },
         })
       : null,
@@ -70,7 +73,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       stage: p.stage,
       client: p.client ? (p.client.company ?? p.client.name) : null,
       owner: p.owner,
-      value: p.valueCents ? money(p.valueCents) : null,
+      quote: p.quotes[0]?.number ?? null,
       due: due ? shortDate(due) : null,
       late: Boolean(due && due < today && p.stage !== "no_ar"),
       tasksDone: p.tasks.filter((t) => t.done).length,
@@ -80,13 +83,13 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       preview: p.previewUrl,
     };
   });
-  const pipeline = projects.filter((p) => p.stage !== "no_ar").reduce((s, p) => s + p.valueCents, 0);
+  const inProgress = projects.filter((p) => p.stage !== "no_ar").length;
 
   return (
     <>
       <PageHeader
         title="Projetos"
-        subtitle={`Arraste os cards entre as etapas. Clique para abrir o projeto. ${money(pipeline)} em andamento.`}
+        subtitle={`Arraste os cards entre as etapas. Clique para abrir o projeto. ${inProgress} em andamento.`}
         actions={
           <Link href="/admin/projetos/novo" className="adm-btn">
             + Novo projeto
@@ -114,7 +117,6 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
                   <Avatar name={open.owner.name} image={open.owner.image} size={22} /> {open.owner.name}
                 </span>
               )}
-              {open.valueCents > 0 && <span>💰 {money(open.valueCents)}</span>}
               {open.dueDate && <span>📅 Entrega {shortDate(fromDbDate(open.dueDate))}</span>}
             </div>
             <nav className="adm-modal-links" aria-label="Links do projeto">
@@ -168,6 +170,17 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
                   suggestions={["Briefing", "Contrato", "Layout aprovado", "Logo e identidade", "Textos do cliente", "Acessos"]}
                 />
               </section>
+              <Can module="orcamentos" level={1}>
+                <section>
+                  <div className="adm-card-head">
+                    <h3>Orçamento</h3>
+                    <Can module="orcamentos" level={2}>
+                      <Link href={`/admin/orcamentos/novo?projeto=${open.id}`}>+ Novo</Link>
+                    </Can>
+                  </div>
+                  <QuoteList quotes={open.quotes} empty="Os valores do projeto ficam no orçamento. Nenhum vinculado ainda." />
+                </section>
+              </Can>
               <Can module="documentos" level={1}>
                 <section>
                   <div className="adm-card-head">

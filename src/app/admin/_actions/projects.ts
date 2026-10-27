@@ -7,7 +7,6 @@ import { prisma, toDbDate } from "@/lib/prisma";
 import { requireAccess } from "@/lib/access";
 import { logActivity } from "@/lib/activity";
 import { readUpload } from "@/lib/files";
-import { parseMoney } from "@/lib/admin/format";
 import { labelOf, projectStages, values } from "@/lib/admin/options";
 import { firstError, formObject, optionalDate, optionalText, optionalUuid, type FormState } from "@/lib/admin/form";
 
@@ -23,7 +22,6 @@ const projectSchema = z.object({
   ownerId: optionalText(60),
   service: optionalText(60),
   stage: z.enum(values(projectStages)),
-  value: z.string().transform(parseMoney),
   startDate: optionalDate,
   dueDate: optionalDate,
   description: optionalText(20000),
@@ -46,8 +44,9 @@ export async function saveProject(id: string | null, _: FormState, formData: For
   const user = await requireAccess("projetos", 2);
   const parsed = projectSchema.safeParse(formObject(formData));
   if (!parsed.success) return { error: firstError(parsed.error) };
-  const { value, startDate, dueDate, ...rest } = parsed.data;
-  const data = { ...rest, valueCents: value, startDate: toDbDate(startDate), dueDate: toDbDate(dueDate) };
+  // Valores ficam só no orçamento vinculado ao projeto.
+  const { startDate, dueDate, ...rest } = parsed.data;
+  const data = { ...rest, startDate: toDbDate(startDate), dueDate: toDbDate(dueDate) };
 
   if (id) {
     const before = await prisma.project.findUnique({ where: { id }, select: { stage: true } });
