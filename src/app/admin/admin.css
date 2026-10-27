@@ -5715,20 +5715,6 @@ button.adm-flyout-row {
   translate: -34px -38px;
   color: var(--login-accent);
 }
-.login-remember {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 2px 0 6px;
-  font-size: 13px;
-  color: var(--login-muted);
-  cursor: pointer;
-}
-.login-remember input {
-  width: 16px;
-  height: 16px;
-  accent-color: #1a73ff;
-}
 .login-submit {
   position: relative;
   border-radius: 14px;

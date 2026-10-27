@@ -23,7 +23,8 @@ export type SignInState = { error?: string; login?: string };
 export async function signIn(_: SignInState, formData: FormData): Promise<SignInState> {
   const login = String(formData.get("login") ?? "").trim().toLowerCase().slice(0, 120);
   const password = String(formData.get("password") ?? "").slice(0, 200);
-  const rememberMe = formData.get("remember") === "on";
+  // Cookie de sessão (sem prazo no navegador): fechar o navegador já descarta o acesso.
+  const rememberMe = false;
   if (!login || !password) return { error: "Informe o usuário e a senha.", login };
 
   // Dois limites: por IP (robô testando vários usuários) e por usuário (vários IPs atacando a mesma conta).
@@ -47,6 +48,11 @@ export async function signIn(_: SignInState, formData: FormData): Promise<SignIn
 export async function signOut() {
   await auth.api.signOut({ headers: await headers() });
   redirect("/admin/login");
+}
+
+/** Revoga a sessão sem redirecionar: chamado pelo SessionGuard quando a aba foi fechada e reaberta. */
+export async function endSession() {
+  await auth.api.signOut({ headers: await headers() }).catch(() => {});
 }
 
 export async function changePassword(_: FormState, formData: FormData): Promise<FormState> {

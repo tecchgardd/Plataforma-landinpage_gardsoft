@@ -2,13 +2,15 @@
 
 import { useActionState } from "react";
 import { signIn } from "@/app/admin/_actions/auth";
+import { markTabSession } from "@/lib/tab-session";
 
 /** O formulário só envia os dados: a validação da senha e a criação da sessão acontecem no servidor. */
 export default function LoginForm() {
   const [state, action, pending] = useActionState(signIn, {});
 
   return (
-    <form className="login-form" action={action}>
+    // A marca da aba vai antes do envio: o login redireciona para o portal, que confere a marca (SessionGuard).
+    <form className="login-form" action={action} onSubmit={markTabSession}>
       <div className="login-textbox">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
           <circle cx="12" cy="8" r="4" />
@@ -25,9 +27,6 @@ export default function LoginForm() {
         <input id="password" name="password" type="password" required autoComplete="current-password" />
         <label htmlFor="password">Senha</label>
       </div>
-      <label className="login-remember">
-        <input type="checkbox" name="remember" defaultChecked /> Manter conectado
-      </label>
       <button type="submit" className="login-submit" disabled={pending}>
         <p>{pending ? "Entrando..." : "Entrar"}</p>
         <span aria-hidden="true">
