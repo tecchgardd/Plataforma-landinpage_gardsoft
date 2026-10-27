@@ -27,7 +27,6 @@ export default function AuthCard({ title, subtitle, children }: { title: string;
         <h1>{title}</h1>
         <p className="login-sub">{subtitle}</p>
         {children}
-        <p className="login-help">Esqueceu a senha? Fale com o administrador do portal.</p>
         <p className="login-footer">
           Ao entrar você concorda com a nossa <Link href="/privacidade">política de privacidade</Link> e os{" "}
           <Link href="/termos">termos de uso</Link>.
