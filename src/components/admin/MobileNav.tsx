@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Avatar from "./Avatar";
+import ThemeSwitch from "./ThemeSwitch";
 import { Icon, activeHref, leaves, links, visibleLinks, type Levels, type NavItem } from "./Sidebar";
 import type { ModuleKey } from "@/lib/permissions";
 import { authClient } from "@/lib/auth-client";
@@ -213,6 +214,7 @@ export default function MobileNav({ name, email, image, levels }: { name: string
               ))}
           </div>
         </section>
+        <ThemeSwitch className="adm-sheet-theme" />
         <div className="adm-sheet-actions">
           <a href="/" target="_blank" rel="noopener noreferrer">
             Ver site ↗

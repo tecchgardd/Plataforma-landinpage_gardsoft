@@ -4,17 +4,19 @@ import { redirect } from "next/navigation";
 import Sidebar from "@/components/admin/Sidebar";
 import MobileNav from "@/components/admin/MobileNav";
 import TableLabels from "@/components/admin/TableLabels";
+import SessionTimer from "@/components/admin/SessionTimer";
 import { usesDefaultPassword } from "@/lib/auth";
 import { getAccess } from "@/lib/access";
 
-export default async function PanelLayout({ children }: { children: ReactNode }) {
+/** `modal`: formulários "Novo …" abertos pela lista numa janela central (ver @modal). */
+export default async function PanelLayout({ children, modal }: { children: ReactNode; modal: ReactNode }) {
   const access = await getAccess();
   if (!access) redirect("/admin/login");
-  const { user, levels } = access;
+  const { user, role, levels, expiresAt } = access;
   const weakPassword = await usesDefaultPassword(user.id);
   return (
     <div className="adm-shell">
-      <Sidebar name={user.name} email={user.email} image={user.image ?? null} levels={levels} />
+      <Sidebar name={user.name} email={user.email} image={user.image ?? null} role={role?.name} levels={levels} />
       <main className="adm-main">
         {weakPassword && (
           <div className="adm-alert" role="alert">
@@ -24,8 +26,10 @@ export default async function PanelLayout({ children }: { children: ReactNode })
         )}
         {children}
       </main>
+      {modal}
       <MobileNav name={user.name} email={user.email} image={user.image ?? null} levels={levels} />
       <TableLabels />
+      <SessionTimer expiresAt={expiresAt.toISOString()} />
     </div>
   );
 }

@@ -106,9 +106,6 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
                             </svg>
                           </a>
                         )}
-                        <Link href={`/admin/clientes/${client.id}`} className="adm-icon-btn" aria-label={`Abrir ${client.name}`}>
-                          →
-                        </Link>
                       </div>
                     </td>
                   </tr>

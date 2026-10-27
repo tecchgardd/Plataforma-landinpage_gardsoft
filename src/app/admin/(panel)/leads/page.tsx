@@ -1,7 +1,7 @@
 import Link from "next/link";
 import PageHeader, { Empty } from "@/components/admin/PageHeader";
 import { TempBadge } from "@/components/admin/Badges";
-import { Owner } from "@/components/admin/Avatar";
+import Avatar, { Owner } from "@/components/admin/Avatar";
 import { prisma, type Prisma } from "@/lib/prisma";
 import { requireAccess } from "@/lib/access";
 import { dateTime, money, phoneLink } from "@/lib/admin/format";
@@ -169,14 +169,17 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
                 return (
                   <tr key={lead.id} className={lead.status === "perdido" ? "is-muted" : ""}>
                     <td>
-                      <Link href={`/admin/leads/${lead.id}`} className="adm-row-link">
-                        <strong>{lead.name}</strong>
-                        <small>{lead.company ?? lead.phone ?? lead.email ?? ""}</small>
-                        {/* Em telas estreitas as colunas secundárias somem e o resumo aparece aqui. */}
-                        <small className="adm-compact-only">
-                          {[lead.service, labelOf(leadSources, lead.source), dateTime(lead.createdAt)].filter(Boolean).join(" · ")}
-                        </small>
-                      </Link>
+                      <div className="adm-row-main">
+                        <Avatar name={lead.name} size={36} />
+                        <Link href={`/admin/leads/${lead.id}`} className="adm-row-link">
+                          <strong>{lead.name}</strong>
+                          <small>{lead.company ?? lead.phone ?? lead.email ?? ""}</small>
+                          {/* Em telas estreitas as colunas secundárias somem e o resumo aparece aqui. */}
+                          <small className="adm-compact-only">
+                            {[lead.service, labelOf(leadSources, lead.source), dateTime(lead.createdAt)].filter(Boolean).join(" · ")}
+                          </small>
+                        </Link>
+                      </div>
                     </td>
                     <td className="opt">{lead.service ?? "—"}</td>
                     <td>
@@ -210,9 +213,6 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
                             </svg>
                           </a>
                         )}
-                        <Link href={`/admin/leads/${lead.id}`} className="adm-icon-btn" aria-label={`Abrir ${lead.name}`}>
-                          →
-                        </Link>
                       </div>
                     </td>
                   </tr>

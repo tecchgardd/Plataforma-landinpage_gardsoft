@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 import Logo from "@/components/brand/Logo";
 import Avatar from "./Avatar";
+import ThemeSwitch from "./ThemeSwitch";
 import { authClient } from "@/lib/auth-client";
 import type { Level, ModuleKey } from "@/lib/permissions";
 
@@ -109,12 +110,28 @@ export function Icon({ d, size = 18 }: { d: string; size?: number }) {
   );
 }
 
-function NavList({ items, active, onNavigate, depth = 0 }: { items: NavItem[]; active: string | null; onNavigate: () => void; depth?: number }) {
+type Flyout = { open: string | null; setOpen: (href: string | null) => void };
+
+function NavList({
+  items,
+  active,
+  onNavigate,
+  depth = 0,
+  flyout,
+}: {
+  items: NavItem[];
+  active: string | null;
+  onNavigate: () => void;
+  depth?: number;
+  flyout?: Flyout;
+}) {
   return (
     <>
       {items.map((item) =>
         item.soon ? (
           <SoonItem key={item.href} item={item} />
+        ) : item.children && flyout && depth === 0 ? (
+          <NavFlyout key={item.href} item={item} active={active} flyout={flyout} />
         ) : item.children ? (
           <NavGroup key={item.href} item={item} active={active} onNavigate={onNavigate} depth={depth} />
         ) : (
@@ -204,10 +221,234 @@ function NavGroup({ item, active, onNavigate, depth }: { item: NavItem; active: 
   );
 }
 
-export default function Sidebar({ name, email, image, levels }: { name: string; email: string; image: string | null; levels: Levels }) {
+type PanelPos = { top: number; left: number; arrow: number };
+
+/**
+ * Painel flutuante à direita da barra lateral (grupos do menu e menu da conta).
+ * Posição fixa, como o balão do "Em breve", para não ser cortado pela rolagem do menu.
+ * Fecha com clique fora, Esc/←, saída do foco, rolagem do menu ou redimensionamento.
+ */
+function useSidePanel(open: boolean, onClose: () => void) {
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<PanelPos | null>(null);
+  const items = () => Array.from(panelRef.current?.querySelectorAll<HTMLElement>("[role^=menuitem]") ?? []);
+  const close = (refocus = false) => {
+    onClose();
+    if (refocus) toggleRef.current?.focus();
+  };
+
+  // Abre ao lado da barra, alinhado ao botão; se não couber embaixo, sobe até caber na tela.
+  useLayoutEffect(() => {
+    if (!open) return setPos(null);
+    const row = toggleRef.current?.getBoundingClientRect();
+    const bar = toggleRef.current?.closest(".adm-sidebar")?.getBoundingClientRect();
+    if (!row || !bar) return;
+    const height = panelRef.current?.offsetHeight ?? 0;
+    const top = Math.max(12, Math.min(row.top - 10, window.innerHeight - height - 12));
+    setPos({ top, left: bar.right + 10, arrow: row.top + row.height / 2 - top });
+  }, [open]);
+
+  // Foco no primeiro item só depois de posicionado (antes disso o painel está invisível e não recebe foco).
+  useEffect(() => {
+    if (pos) items()[0]?.focus({ preventScroll: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pos]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!panelRef.current?.contains(target) && !toggleRef.current?.contains(target)) onClose();
+    };
+    const nav = toggleRef.current?.closest(".adm-sidebar")?.querySelector("nav");
+    document.addEventListener("pointerdown", onPointer);
+    nav?.addEventListener("scroll", onClose);
+    window.addEventListener("resize", onClose);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      nav?.removeEventListener("scroll", onClose);
+      window.removeEventListener("resize", onClose);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const panelProps = {
+    ref: panelRef,
+    className: "adm-flyout",
+    style: pos ? { top: pos.top, left: pos.left, ["--arrow-y" as string]: `${pos.arrow}px` } : { visibility: "hidden" as const },
+    onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => {
+      const list = items();
+      const index = list.indexOf(document.activeElement as HTMLElement);
+      const move = (to: number) => {
+        event.preventDefault();
+        list[(to + list.length) % list.length]?.focus();
+      };
+      if (event.key === "Escape" || event.key === "ArrowLeft") {
+        event.preventDefault();
+        close(true);
+      } else if (event.key === "ArrowDown") move(index + 1);
+      else if (event.key === "ArrowUp") move(index - 1);
+      else if (event.key === "Home") move(0);
+      else if (event.key === "End") move(list.length - 1);
+    },
+    onBlur: (event: FocusEvent<HTMLDivElement>) => {
+      const next = event.relatedTarget as Node | null;
+      if (!panelRef.current?.contains(next) && !toggleRef.current?.contains(next)) onClose();
+    },
+  };
+
+  return { toggleRef, panelProps, close };
+}
+
+/** Grupo do menu lateral (Comercial, Financeiro…): em vez de expandir para baixo, abre um painel à direita da barra. */
+function NavFlyout({ item, active, flyout }: { item: NavItem; active: string | null; flyout: Flyout }) {
+  const open = flyout.open === item.href;
+  const { toggleRef, panelProps, close } = useSidePanel(open, () => flyout.setOpen(null));
+  const inside = contains(item, active);
+  const id = `flyout-${item.href.slice(1)}`;
+
+  return (
+    <div className={`adm-nav-group adm-flyout-group ${inside ? "has-active" : ""} ${open ? "is-open" : ""}`}>
+      <button
+        ref={toggleRef}
+        type="button"
+        className="adm-nav-toggle"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => flyout.setOpen(open ? null : item.href)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowRight" && !open) {
+            event.preventDefault();
+            flyout.setOpen(item.href);
+          }
+        }}
+      >
+        {item.icon && <Icon d={item.icon} />}
+        <span className="adm-nav-toggle-label">{item.label}</span>
+        <span className="adm-nav-caret" aria-hidden="true">
+          <Icon d="m9 6 6 6-6 6" size={14} />
+        </span>
+      </button>
+      {open && (
+        <div {...panelProps} id={id} role="menu" aria-label={item.label}>
+          <p className="adm-flyout-title">
+            {item.icon && <Icon d={item.icon} size={16} />}
+            {item.label}
+          </p>
+          {item.children!.map((child) => (
+            <Link
+              key={child.href}
+              href={child.href}
+              role="menuitem"
+              className={`adm-flyout-row ${active === child.href ? "active" : ""}`}
+              aria-current={active === child.href ? "page" : undefined}
+              onClick={() => close()}
+            >
+              {child.icon ? <Icon d={child.icon} /> : <span className="adm-nav-dot" aria-hidden="true" />}
+              <span>{child.label}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Conta no rodapé da barra: uma linha (avatar, nome, perfil de acesso) que abre o menu com perfil, tema, site e sair. */
+function AccountMenu({
+  name,
+  email,
+  image,
+  role,
+  open,
+  setOpen,
+  onLogout,
+}: {
+  name: string;
+  email: string;
+  image: string | null;
+  role?: string | null;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  onLogout: () => void;
+}) {
+  const { toggleRef, panelProps, close } = useSidePanel(open, () => setOpen(false));
+  return (
+    <div className={`adm-account ${open ? "is-open" : ""}`}>
+      <button
+        ref={toggleRef}
+        type="button"
+        className="adm-account-toggle"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls="adm-account-menu"
+        onClick={() => setOpen(!open)}
+      >
+        <Avatar name={name} image={image} size={38} />
+        <span className="adm-account-info">
+          <strong>{name}</strong>
+          <small>{role ?? email}</small>
+        </span>
+        <span className="adm-account-more" aria-hidden="true">
+          <Icon d="M12 6h.01M12 12h.01M12 18h.01" size={18} />
+        </span>
+      </button>
+      {open && (
+        <div {...panelProps} id="adm-account-menu" role="menu" aria-label="Sua conta">
+          <div className="adm-account-card">
+            <Avatar name={name} image={image} size={40} />
+            <span className="adm-account-info">
+              <strong>{name}</strong>
+              <small>{email}</small>
+            </span>
+          </div>
+          <Link href="/admin/perfil" role="menuitem" className="adm-flyout-row" onClick={() => close()}>
+            <Icon d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21a8 8 0 0 1 16 0" />
+            <span>Meu perfil</span>
+          </Link>
+          <ThemeSwitch className="adm-flyout-row" menuItem />
+          <a href="/" target="_blank" rel="noopener noreferrer" role="menuitem" className="adm-flyout-row" onClick={() => close()}>
+            <Icon d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6" />
+            <span>Ver site</span>
+          </a>
+          <hr className="adm-flyout-sep" />
+          <button type="button" role="menuitem" className="adm-flyout-row danger" onClick={onLogout}>
+            <Icon d="M9 21H5V3h4M16 17l5-5-5-5M21 12H9" />
+            <span>Sair</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function Sidebar({
+  name,
+  email,
+  image,
+  role,
+  levels,
+}: {
+  name: string;
+  email: string;
+  image: string | null;
+  /** Nome do perfil de acesso (ex.: Super admin). */
+  role?: string | null;
+  levels: Levels;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const active = activeHref(pathname);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const [accountOpen, setAccountOpen] = useState(false);
+
+  // Trocar de página fecha os painéis.
+  useEffect(() => {
+    setOpenGroup(null);
+    setAccountOpen(false);
+  }, [pathname]);
 
   async function logout() {
     await authClient.signOut();
@@ -229,28 +470,9 @@ export default function Sidebar({ name, email, image, levels }: { name: string; 
           <span className="adm-brand-tag">Portal</span>
         </Link>
         <nav>
-          <NavList items={visibleLinks(links, levels)} active={active} onNavigate={() => {}} />
+          <NavList items={visibleLinks(links, levels)} active={active} onNavigate={() => {}} flyout={{ open: openGroup, setOpen: setOpenGroup }} />
         </nav>
-        <Link
-          href="/admin/perfil"
-          className={`adm-user ${pathname.startsWith("/admin/perfil") ? "active" : ""}`}
-         
-          title="Abrir meu perfil"
-        >
-          <Avatar name={name} image={image} size={36} />
-          <span className="adm-user-info">
-            <strong>{name}</strong>
-            <small>{email}</small>
-          </span>
-        </Link>
-        <div className="adm-side-actions">
-          <a href="/" target="_blank" rel="noopener noreferrer">
-            Ver site ↗
-          </a>
-          <button type="button" onClick={logout}>
-            Sair
-          </button>
-        </div>
+        <AccountMenu name={name} email={email} image={image} role={role} open={accountOpen} setOpen={setAccountOpen} onLogout={logout} />
       </aside>
     </>
   );

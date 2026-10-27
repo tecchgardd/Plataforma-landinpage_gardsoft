@@ -3,6 +3,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { prisma } from "./prisma";
 import { getSession } from "./session";
+import { sessionExpiry } from "./session-policy";
 import { levelOf, levelsOf, SUPER_ADMIN, type Level, type ModuleKey } from "./permissions";
 
 /** Usuário logado + perfil de acesso (uma consulta por requisição). */
@@ -16,6 +17,8 @@ export const getAccess = cache(async () => {
   const role = record?.role ?? null;
   return {
     user: session.user,
+    /** Quando a sessão expira (prazo fixo de 4h desde o login). */
+    expiresAt: sessionExpiry(session.session),
     role,
     isSuperAdmin: role?.key === SUPER_ADMIN,
     level: (module: ModuleKey) => levelOf(role, module),

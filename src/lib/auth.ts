@@ -4,6 +4,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { username } from "better-auth/plugins";
 import { prisma } from "./prisma";
+import { SESSION_MAX_AGE } from "./session-policy";
 import { siteUrl, vercelOrigins } from "./site-url";
 
 const baseURL = siteUrl;
@@ -29,8 +30,9 @@ export const auth = betterAuth({
     minPasswordLength: 8,
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 14,
-    updateAge: 60 * 60 * 24,
+    // 4 horas a partir do login, sem renovar com o uso: depois disso é preciso entrar de novo.
+    expiresIn: SESSION_MAX_AGE,
+    disableSessionRefresh: true,
   },
   rateLimit: {
     enabled: true,
