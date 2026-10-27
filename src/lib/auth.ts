@@ -34,15 +34,8 @@ export const auth = betterAuth({
     expiresIn: SESSION_MAX_AGE,
     disableSessionRefresh: true,
   },
-  rateLimit: {
-    enabled: true,
-    window: 60,
-    max: 30,
-    customRules: {
-      "/sign-in/email": { window: 60, max: 5 },
-      "/sign-in/username": { window: 60, max: 5 },
-    },
-  },
+  // Sem rota HTTP (/api/auth): login e troca de senha passam pelas server actions em admin/_actions/auth.ts,
+  // que têm o próprio limite de tentativas no banco (src/lib/security.ts).
   plugins: [username(), nextCookies()],
 });
 

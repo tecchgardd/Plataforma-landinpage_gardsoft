@@ -576,6 +576,16 @@ model WebhookEvent {
   @@map("webhook_events")
 }
 
+/// Contador de tentativas por janela (login, formulários públicos). Fica no banco para valer em todas as instâncias.
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime @map("reset_at") @db.Timestamptz(3)
+
+  @@index([resetAt])
+  @@map("rate_limits")
+}
+
 /// Despesa cadastrada (assinatura, ferramenta, servidor...). As recorrentes geram as contas a pagar de cada mês/ano.
 model Expense {
   id             String         @id @default(uuid()) @db.Uuid

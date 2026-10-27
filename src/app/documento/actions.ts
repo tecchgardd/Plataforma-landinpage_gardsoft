@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { clientIp, rateLimited } from "@/lib/security";
 import { logSystem } from "@/lib/activity";
 import { documentHash, typeOf } from "@/lib/documents";
 import { loadDocument } from "@/lib/documents-server";
@@ -23,20 +24,10 @@ const schema = z
   .refine((d) => d.decision === "ajustes" || d.accept === "on", { message: "Confirme que leu e aprova o documento.", path: ["accept"] })
   .refine((d) => d.decision === "aprovar" || d.note.length >= 10, { message: "Descreva os ajustes (pelo menos uma frase).", path: ["note"] });
 
-// Limite simples por IP.
-const attempts = new Map<string, number[]>();
-function tooMany(key: string) {
-  const now = Date.now();
-  const recent = (attempts.get(key) ?? []).filter((t) => now - t < 10 * 60_000);
-  recent.push(now);
-  attempts.set(key, recent);
-  return recent.length > 10;
-}
-
 export async function decideDocument(token: string, _: DecisionState, formData: FormData): Promise<DecisionState> {
   const h = await headers();
-  const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "desconhecido";
-  if (tooMany(ip)) return { error: "Muitas tentativas. Aguarde alguns minutos." };
+  const ip = await clientIp();
+  if (await rateLimited(`documento:${ip}`, 10, 600)) return { error: "Muitas tentativas. Aguarde alguns minutos." };
   const parsed = schema.safeParse({
     decision: formData.get("decision"),
     name: formData.get("name"),

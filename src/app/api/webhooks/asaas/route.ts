@@ -1,5 +1,5 @@
-import { timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import { safeEqual } from "@/lib/security";
 import { logSystem } from "@/lib/activity";
 import { markEntryPaid } from "@/lib/finance/billing";
 import { applyAsaasInvoice } from "@/lib/finance/invoices";
@@ -18,14 +18,7 @@ type Payload = {
   invoice?: { id: string; status: string; number?: string; pdfUrl?: string; xmlUrl?: string; statusDescription?: string };
 };
 
-function authorized(request: Request) {
-  const expected = process.env.ASAAS_WEBHOOK_TOKEN;
-  const received = request.headers.get("asaas-access-token");
-  if (!expected || !received) return false;
-  const a = Buffer.from(expected);
-  const b = Buffer.from(received);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
+const authorized = (request: Request) => safeEqual(process.env.ASAAS_WEBHOOK_TOKEN, request.headers.get("asaas-access-token"));
 
 const methodOf = (billingType?: string) =>
   billingType === "PIX" ? "pix" : billingType === "CREDIT_CARD" ? "cartao" : billingType === "BOLETO" ? "boleto" : null;

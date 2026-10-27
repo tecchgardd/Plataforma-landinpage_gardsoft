@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 import Logo from "@/components/brand/Logo";
 import Avatar from "./Avatar";
 import ThemeSwitch from "./ThemeSwitch";
-import { authClient } from "@/lib/auth-client";
+import { signOut } from "@/app/admin/_actions/auth";
 import type { Level, ModuleKey } from "@/lib/permissions";
 
 export type NavItem = {
@@ -439,7 +439,6 @@ export default function Sidebar({
   levels: Levels;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const active = activeHref(pathname);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -450,11 +449,8 @@ export default function Sidebar({
     setAccountOpen(false);
   }, [pathname]);
 
-  async function logout() {
-    await authClient.signOut();
-    router.replace("/admin/login");
-    router.refresh();
-  }
+  // A saída roda no servidor: encerra a sessão, apaga o cookie e volta para o login.
+  const logout = () => signOut();
 
   return (
     <>

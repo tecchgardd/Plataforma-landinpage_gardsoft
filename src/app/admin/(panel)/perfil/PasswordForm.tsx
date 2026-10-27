@@ -1,33 +1,14 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { authClient } from "@/lib/auth-client";
+import { useActionState } from "react";
+import { changePassword } from "@/app/admin/_actions/auth";
 
+/** A troca de senha é validada no servidor; as outras sessões abertas são encerradas. */
 export default function PasswordForm() {
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
-  const [pending, setPending] = useState(false);
-
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const data = new FormData(form);
-    const newPassword = String(data.get("new"));
-    if (newPassword.length < 8) return setMessage({ ok: false, text: "A nova senha precisa de pelo menos 8 caracteres." });
-    if (newPassword !== data.get("confirm")) return setMessage({ ok: false, text: "As senhas não conferem." });
-    setPending(true);
-    const { error } = await authClient.changePassword({
-      currentPassword: String(data.get("current")),
-      newPassword,
-      revokeOtherSessions: true,
-    });
-    setPending(false);
-    if (error) return setMessage({ ok: false, text: "Senha atual incorreta." });
-    form.reset();
-    setMessage({ ok: true, text: "Senha alterada com sucesso." });
-  }
+  const [state, action, pending] = useActionState(changePassword, {});
 
   return (
-    <form className="adm-form" onSubmit={onSubmit}>
+    <form className="adm-form" action={action}>
       <div className="adm-form-grid">
         <label className="adm-field wide">
           <span className="adm-label">Senha atual</span>
@@ -46,8 +27,8 @@ export default function PasswordForm() {
         <button type="submit" className="adm-btn" disabled={pending}>
           {pending ? "Salvando..." : "Trocar senha"}
         </button>
-        <p role="status" className={message ? (message.ok ? "adm-msg ok" : "adm-msg error") : "adm-msg"}>
-          {message?.text}
+        <p role="status" className={state.success ? "adm-msg ok" : state.error ? "adm-msg error" : "adm-msg"}>
+          {state.success ?? state.error}
         </p>
       </div>
     </form>

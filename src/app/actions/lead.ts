@@ -1,8 +1,8 @@
 "use server";
 
-import { headers } from "next/headers";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { clientIp, rateLimited } from "@/lib/security";
 
 export type LeadFormState = { ok: boolean; message: string; text?: string };
 
@@ -21,22 +21,11 @@ const leadSchema = z.object({
   utmCampaign: z.string().trim().max(100),
 });
 
-// Limite simples por IP para evitar spam no formulário público.
-const attempts = new Map<string, number[]>();
-function tooMany(ip: string) {
-  const now = Date.now();
-  const recent = (attempts.get(ip) ?? []).filter((t) => now - t < 10 * 60_000);
-  recent.push(now);
-  attempts.set(ip, recent);
-  return recent.length > 5;
-}
-
 export async function submitLead(_: LeadFormState, formData: FormData): Promise<LeadFormState> {
   // Campo invisível: robôs preenchem, pessoas não.
   if (formData.get("website")) return { ok: true, message: "Recebemos sua mensagem!" };
 
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  if (tooMany(ip)) return { ok: false, message: "Muitas tentativas. Aguarde alguns minutos e tente novamente." };
+  if (await rateLimited(`lead:${await clientIp()}`, 5, 600)) return { ok: false, message: "Muitas tentativas. Aguarde alguns minutos e tente novamente." };
   // LGPD: sem o aceite da política de privacidade, nada é gravado.
   if (formData.get("consent") !== "sim")
     return { ok: false, message: "Para enviar, autorize o uso dos dados conforme a Política de privacidade." };

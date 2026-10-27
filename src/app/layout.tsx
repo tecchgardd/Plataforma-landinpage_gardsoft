@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { DM_Sans, JetBrains_Mono, Sora } from "next/font/google";
 import { site } from "@/data/site";
+import { HAS_JS_SCRIPT } from "@/lib/csp";
 import "./globals.css";
 
 const display = Sora({ subsets: ["latin"], variable: "--font-display", weight: ["400", "600", "700", "800"] });
@@ -28,8 +29,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" className={`${display.variable} ${body.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
-        {/* Marca a página como "com JS" antes da pintura, evitando piscar nas animações de entrada. */}
-        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
+        {/* Marca a página como "com JS" antes da pintura, evitando piscar nas animações de entrada.
+            Liberado na CSP pelo hash do conteúdo (ver src/lib/csp.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: HAS_JS_SCRIPT }} />
       </head>
       <body>{children}</body>
     </html>

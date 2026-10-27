@@ -108,14 +108,16 @@ Cada usuário tem um perfil (Administração → Perfis de acesso). Para cada m�
 | `src/app/page.tsx` | Landing page (lê o conteúdo do banco, com fallback para `src/data/defaults.ts`) |
 | `src/app/actions/lead.ts` | Recebe o formulário do site (validação, anti-spam, UTM → campanha) |
 | `src/app/admin/` | Portal: `login`, `(panel)/` com as páginas e `_actions/` com as server actions |
-| `src/app/api/auth/[...all]` | Rotas do Better Auth |
+| `src/app/admin/_actions/auth.ts` | Login, saída e troca de senha (server actions; a API HTTP do Better Auth não fica exposta) |
+| `src/lib/security.ts` | Limite de tentativas no banco (`rateLimited`), IP do cliente e comparação de segredos em tempo constante |
 | `src/app/api/media/[id]` | Serve as imagens enviadas pelo portal |
 | `prisma/schema.prisma` | Tabelas (auth, leads, clientes, projetos, campanhas, conteúdo, mídia) |
 | `src/lib/prisma.ts` | Client do Prisma (adaptador `pg`) e conversão de datas |
 | `src/lib/auth.ts` | Better Auth (login por usuário ou e-mail, cadastro público desligado) e criação do admin inicial |
 | `src/lib/content-schema.ts` | Formato de cada seção editável do site |
 | `src/app/admin/(panel)/conteudo/specs.ts` | Campos do editor de conteúdo. Para tornar um novo texto editável, comece aqui. |
-| `src/proxy.ts` | Redireciona para o login quem não tem sessão (checagem rápida; a validação real fica no servidor) |
+| `src/proxy.ts` | Redireciona para o login quem não tem sessão (checagem rápida; a validação real fica no servidor) e aplica a CSP com nonce no portal e nas páginas por link |
+| `src/lib/csp.ts` | Políticas de segurança de conteúdo (CSP) do site e do portal |
 | `src/data/defaults.ts` | Conteúdo padrão do site |
 | `src/lib/activity.ts` | Registro do histórico (`logActivity`) e lista da equipe |
 | `src/lib/files.ts` | Validação dos anexos (tipo conferido pelo conteúdo, até 10 MB) |
@@ -136,7 +138,10 @@ Cada usuário tem um perfil (Administração → Perfis de acesso). Para cada m�
 
 - Não existe cadastro público: novos usuários só são criados em **Administração → Usuários**, por quem tem permissão.
 - Troque a senha padrão "admin" antes de publicar. O portal avisa enquanto ela estiver em uso.
-- O login tem limite de 5 tentativas por minuto. As sessões duram 14 dias.
+- Login, saída e troca de senha rodam como server actions. A API HTTP do Better Auth (`/api/auth/*`) não é publicada e o navegador não carrega o cliente de autenticação.
+- O login tem dois limites, guardados no banco (valem para todas as instâncias): 20 tentativas por IP a cada 10 minutos e 5 por usuário a cada 15 minutos. A sessão dura 4 horas desde o login, sem renovação.
+- Trocar a senha encerra as outras sessões abertas.
 - Todas as páginas, ações e downloads do portal verificam a sessão e o perfil de acesso no servidor.
+- Cabeçalhos de segurança em todo o site (HSTS, anti-clickjacking, `nosniff`, `Referrer-Policy`, `Permissions-Policy`). O portal e as páginas de contrato, orçamento e documento usam CSP estrita com nonce por requisição.
 - Uploads aceitam só JPG, PNG, WEBP e GIF de até 5 MB. O tipo é conferido pelo conteúdo do arquivo.
-- O formulário do site tem campo anti-robô e limite de envios por IP. Esse limite é guardado em memória, por instância do servidor.
+- O formulário do site tem campo anti-robô e limite de envios por IP; assinatura de contrato e respostas de orçamento e documento também têm limite por IP. Os limites ficam na tabela `rate_limits`.

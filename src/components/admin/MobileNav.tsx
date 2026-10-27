@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Avatar from "./Avatar";
 import ThemeSwitch from "./ThemeSwitch";
 import { Icon, activeHref, leaves, links, visibleLinks, type Levels, type NavItem } from "./Sidebar";
 import type { ModuleKey } from "@/lib/permissions";
-import { authClient } from "@/lib/auth-client";
+import { signOut } from "@/app/admin/_actions/auth";
 
 /** Mesmo ícone do menu lateral, para a navegação ser reconhecível nos dois tamanhos de tela. */
 const iconOf = (href: string) => leaves(links).find((l) => l.href === href)?.icon ?? "";
@@ -85,18 +85,14 @@ function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () 
 
 export default function MobileNav({ name, email, image, levels }: { name: string; email: string; image: string | null; levels: Levels }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [sheet, setSheet] = useState<"create" | "menu" | null>(null);
   const active = activeHref(pathname);
 
   // Fecha o painel ao trocar de página.
   useEffect(() => setSheet(null), [pathname]);
 
-  async function logout() {
-    await authClient.signOut();
-    router.replace("/admin/login");
-    router.refresh();
-  }
+  // A saída roda no servidor: encerra a sessão, apaga o cookie e volta para o login.
+  const logout = () => signOut();
 
   const close = () => setSheet(null);
   const myTabs = tabs.filter((t) => levels[t.module] > 0);

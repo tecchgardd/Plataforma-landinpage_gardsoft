@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { logSystem } from "@/lib/activity";
+import { safeEqual } from "@/lib/security";
 import { fetchMetaLead, metaLeadsConfigured, validMetaSignature, type MetaLead } from "@/lib/integrations/meta";
 
 /**
@@ -13,7 +14,7 @@ import { fetchMetaLead, metaLeadsConfigured, validMetaSignature, type MetaLead }
 /** Verificação do cadastro do webhook (a Meta chama com hub.challenge). */
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const ok = url.searchParams.get("hub.mode") === "subscribe" && process.env.META_VERIFY_TOKEN && url.searchParams.get("hub.verify_token") === process.env.META_VERIFY_TOKEN;
+  const ok = url.searchParams.get("hub.mode") === "subscribe" && safeEqual(process.env.META_VERIFY_TOKEN, url.searchParams.get("hub.verify_token"));
   return ok ? new Response(url.searchParams.get("hub.challenge") ?? "", { status: 200 }) : new Response("Forbidden", { status: 403 });
 }
 

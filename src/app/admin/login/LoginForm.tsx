@@ -1,47 +1,20 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
-import { authClient } from "@/lib/auth-client";
+import { useActionState } from "react";
+import { signIn } from "@/app/admin/_actions/auth";
 
+/** O formulário só envia os dados: a validação da senha e a criação da sessão acontecem no servidor. */
 export default function LoginForm() {
-  const router = useRouter();
-  const [error, setError] = useState("");
-  const [pending, setPending] = useState(false);
-
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    setPending(true);
-    setError("");
-    const login = String(data.get("login")).trim();
-    const password = String(data.get("password"));
-    const rememberMe = data.get("remember") === "on";
-    // Aceita o nome de usuário (ex.: admin) ou o e-mail.
-    const { error } = login.includes("@")
-      ? await authClient.signIn.email({ email: login, password, rememberMe })
-      : await authClient.signIn.username({ username: login, password, rememberMe });
-    if (error) {
-      setPending(false);
-      setError(
-        error.status === 429
-          ? "Muitas tentativas. Aguarde um minuto e tente de novo."
-          : "Usuário ou senha incorretos.",
-      );
-      return;
-    }
-    router.replace("/admin");
-    router.refresh();
-  }
+  const [state, action, pending] = useActionState(signIn, {});
 
   return (
-    <form className="login-form" onSubmit={onSubmit}>
+    <form className="login-form" action={action}>
       <div className="login-textbox">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
           <circle cx="12" cy="8" r="4" />
           <path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6" />
         </svg>
-        <input id="login" name="login" required autoComplete="username" autoCapitalize="none" spellCheck={false} autoFocus />
+        <input id="login" name="login" defaultValue={state.login} required autoComplete="username" autoCapitalize="none" spellCheck={false} autoFocus />
         <label htmlFor="login">Usuário ou e-mail</label>
       </div>
       <div className="login-textbox">
@@ -63,9 +36,9 @@ export default function LoginForm() {
           </svg>
         </span>
       </button>
-      {error && (
+      {state.error && (
         <p role="alert" className="login-error">
-          {error}
+          {state.error}
         </p>
       )}
     </form>
