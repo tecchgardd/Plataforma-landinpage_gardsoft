@@ -1,7 +1,9 @@
 import Link from "next/link";
 import PageHeader, { Empty } from "@/components/admin/PageHeader";
-import { StageBadge, StatusBadge, TempBadge } from "@/components/admin/Badges";
+import { StatusBadge, TempBadge } from "@/components/admin/Badges";
+import StageBadge from "@/components/admin/StageBadge";
 import { fromDbDate, prisma } from "@/lib/prisma";
+import { activeProject } from "@/lib/project-columns";
 import { getAccess, requireAccess } from "@/lib/access";
 import { dateTime, money, shortDate } from "@/lib/admin/format";
 import { leadStatuses, temperatures } from "@/lib/admin/options";
@@ -42,12 +44,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     prisma.lead.groupBy({ by: ["temperature"], where: open, _count: { _all: true } }),
     prisma.lead.findMany({ orderBy: { createdAt: "desc" }, take: 6 }),
     prisma.project.findMany({
-      where: { stage: { not: "no_ar" }, dueDate: { not: null, lt: in14 } },
+      where: { ...activeProject, dueDate: { not: null, lt: in14 } },
       orderBy: { dueDate: "asc" },
       take: 6,
       select: { id: true, name: true, stage: true, dueDate: true },
     }),
-    prisma.project.count({ where: { stage: { not: "no_ar" } } }),
+    prisma.project.count({ where: activeProject }),
     // Receita = só o que foi vendido no mês (orçamento aprovado, contrato assinado ou lead fechado).
     salesBetween(month.start, month.end),
     // Em negociação: orçamentos enviados aguardando resposta, dentro da validade (ainda não são receita).

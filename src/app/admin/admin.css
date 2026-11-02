@@ -1327,7 +1327,7 @@
 /* ---------- Quadro de projetos ---------- */
 .adm-board {
   display: grid;
-  grid-template-columns: repeat(6, minmax(168px, 1fr));
+  grid-template-columns: repeat(var(--cols, 6), minmax(200px, 1fr));
   gap: 12px;
   overflow-x: auto;
   padding-bottom: 8px;
@@ -1831,7 +1831,7 @@
     flex: 1;
   }
   .adm-board {
-    grid-template-columns: repeat(6, 260px);
+    grid-template-columns: repeat(var(--cols, 6), 260px);
   }
 }
 
@@ -2044,6 +2044,113 @@
   margin: 2px 0 8px;
   border-radius: 3px;
   background: var(--blue);
+}
+
+/* colunas configuráveis: menu, limite WIP, coluna de entrega e reordenação */
+.adm-board.is-saving {
+  cursor: progress;
+}
+.adm-col header.is-draggable {
+  cursor: grab;
+}
+.adm-col header strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.adm-col.dragging {
+  opacity: 0.45;
+}
+.adm-col.col-drop-before {
+  box-shadow: -4px 0 0 -1px var(--blue);
+}
+.adm-col.col-drop-after {
+  box-shadow: 4px 0 0 -1px var(--blue);
+}
+.adm-root .adm-col-menu {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin: -4px -6px -4px 0;
+  border-color: transparent;
+  background: transparent;
+}
+.adm-root .adm-col-menu:hover,
+.adm-root .adm-col-menu.is-open {
+  background: var(--surface);
+  border-color: var(--line);
+}
+.adm-col-done {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ok-bg);
+  color: var(--ok);
+  font-size: 11px;
+  font-weight: 700;
+}
+.adm-col-count.full {
+  background: var(--tone-amber-bg);
+  color: var(--tone-amber);
+}
+.adm-col-count.over {
+  background: var(--err-bg);
+  color: var(--err);
+}
+.adm-col.over-wip {
+  box-shadow: inset 0 0 0 2px var(--err-line);
+}
+.adm-col-warn {
+  margin-top: -4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--err);
+}
+.adm-col-form {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 13px;
+}
+.adm-col-form.danger {
+  border-color: var(--err-line);
+}
+.adm-col-form .adm-label {
+  font-size: 12px;
+}
+.adm-col-form .adm-check {
+  font-size: 13px;
+}
+.adm-col-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.adm-root .adm-col.adm-col-add {
+  min-height: 0;
+  align-self: start;
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+}
+.adm-col-add-btn {
+  min-height: 42px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+.adm-col-add-btn:hover {
+  background: var(--bg-soft);
+  color: var(--blue);
 }
 
 /* =========================================================
@@ -3206,9 +3313,12 @@
     inset: auto 0 0;
     z-index: 50;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    /* uma coluna por item visível (perfis com menos módulos têm menos abas) */
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     height: calc(56px + env(safe-area-inset-bottom));
-    padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    /* no tablet os ícones ficam agrupados no centro, não espalhados pela largura toda */
+    padding: 0 max(env(safe-area-inset-right), calc((100% - 560px) / 2)) env(safe-area-inset-bottom) max(env(safe-area-inset-left), calc((100% - 560px) / 2));
     background: var(--surface-glass);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -3313,6 +3423,17 @@
   .adm-root .adm-filters input {
     width: 100%;
     min-width: 0;
+  }
+  /* só a busca e o botão: ficam na mesma linha */
+  .adm-filters:not(:has(select, input:not([type="hidden"]):not([name="q"]):not([type="search"]))) {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .adm-root .adm-filters:not(:has(select, input:not([type="hidden"]):not([name="q"]):not([type="search"]))) > input {
+    grid-column: auto;
+  }
+  /* botão que sobra sozinho na última linha ocupa a linha toda */
+  .adm-filters:has(select) > :is(button, .adm-btn):last-child:nth-child(even of :not([type="hidden"])) {
+    grid-column: 1 / -1;
   }
 
   /* a caixa da tabela some: cada linha vira um card próprio */
@@ -3527,7 +3648,8 @@
   }
 }
 @container adm-main (max-width: 520px) {
-  .adm-root .adm-kpis-4 {
+  .adm-root .adm-kpis-4,
+  .adm-root .adm-kpis.three {
     grid-template-columns: 1fr;
   }
   .adm-root .adm-kpis-4 .adm-kpi:first-child {
@@ -5297,7 +5419,8 @@ button.adm-flyout-row {
 }
 
 /* =========================================================
-   Menu suspenso das tabelas (Dropdown.tsx): abre para baixo, um por vez
+   Menu suspenso das tabelas (Dropdown.tsx): abre para baixo (ou para cima
+   quando não cabe embaixo), um por vez
    ========================================================= */
 .adm-dropdown {
   position: fixed;
@@ -5318,6 +5441,17 @@ button.adm-flyout-row {
   from {
     opacity: 0;
     translate: 0 -4px;
+    scale: 0.98;
+  }
+}
+.adm-dropdown.up {
+  transform-origin: bottom;
+  animation-name: adm-dropdown-up;
+}
+@keyframes adm-dropdown-up {
+  from {
+    opacity: 0;
+    translate: 0 4px;
     scale: 0.98;
   }
 }

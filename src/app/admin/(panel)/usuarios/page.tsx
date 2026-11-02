@@ -3,6 +3,7 @@ import PageHeader from "@/components/admin/PageHeader";
 import Avatar from "@/components/admin/Avatar";
 import { ConfirmButton } from "@/components/admin/ActionForm";
 import { prisma } from "@/lib/prisma";
+import { activeProject } from "@/lib/project-columns";
 import { getAccess, requireAccess } from "@/lib/access";
 import { dateTime, shortDate } from "@/lib/admin/format";
 import { deleteUser } from "../../_actions/account";
@@ -21,7 +22,7 @@ export default async function UsersPage() {
         select: {
           leads: { where: { status: { notIn: ["fechado", "perdido"] } } },
           clients: true,
-          projects: { where: { stage: { not: "no_ar" } } },
+          projects: { where: activeProject },
         },
       },
     },

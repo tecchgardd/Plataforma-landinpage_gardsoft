@@ -119,8 +119,14 @@ export async function convertLead(id: string) {
           select: { id: true },
         })
       ).id;
+    // Entra na primeira coluna do quadro (as colunas são configuráveis), no fim da fila.
+    const first = await tx.projectColumn.findFirst({ orderBy: [{ position: "asc" }, { createdAt: "asc" }], select: { id: true } });
+    if (!first) throw new Error("O quadro de projetos não tem colunas.");
+    const last = await tx.project.aggregate({ where: { stage: first.id }, _max: { position: true } });
     const project = await tx.project.create({
       data: {
+        stage: first.id,
+        position: (last._max.position ?? -1) + 1,
         name: `${lead.service ?? "Projeto"} — ${lead.company ?? lead.name}`,
         clientId,
         leadId: lead.id,

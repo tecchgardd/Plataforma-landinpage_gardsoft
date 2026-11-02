@@ -4,7 +4,6 @@ import {
   invoiceStatuses,
   labelOf,
   leadStatuses,
-  projectStages,
   quoteStatuses,
   temperatures,
 } from "@/lib/admin/options";
@@ -21,15 +20,6 @@ export function TempBadge({ value }: { value: string }) {
 
 export function StatusBadge({ value }: { value: string }) {
   return <span className={`adm-badge status-${value}`}>{labelOf(leadStatuses, value)}</span>;
-}
-
-export function StageBadge({ value }: { value: string }) {
-  const index = projectStages.findIndex((s) => s.value === value);
-  return (
-    <span className={`adm-badge stage ${value === "no_ar" ? "status-fechado" : ""}`}>
-      {index + 1}/{projectStages.length} · {labelOf(projectStages, value)}
-    </span>
-  );
 }
 
 export function CampaignBadge({ value }: { value: string }) {

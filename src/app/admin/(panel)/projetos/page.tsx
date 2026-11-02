@@ -3,14 +3,15 @@ import { z } from "zod";
 import PageHeader from "@/components/admin/PageHeader";
 import ActionForm, { ConfirmButton } from "@/components/admin/ActionForm";
 import Avatar from "@/components/admin/Avatar";
-import { DocumentBadge, StageBadge, StatusBadge } from "@/components/admin/Badges";
+import { DocumentBadge, StatusBadge } from "@/components/admin/Badges";
+import StageBadge from "@/components/admin/StageBadge";
 import Files from "@/components/admin/Files";
 import { fromDbDate, prisma } from "@/lib/prisma";
 import { getTeam } from "@/lib/activity";
-import { requireAccess } from "@/lib/access";
+import { getAccess, requireAccess } from "@/lib/access";
 import { shortDate } from "@/lib/admin/format";
 import QuoteList, { quoteListSelect } from "@/components/admin/QuoteList";
-import { projectStages } from "@/lib/admin/options";
+import { getColumns } from "@/lib/project-columns";
 import { typeOf } from "@/lib/documents";
 import { deleteProject, deleteProjectFile, saveProject, uploadProjectFile } from "../../_actions/projects";
 import Board, { type Card } from "./Board";
@@ -34,8 +35,10 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
   const { projeto } = await searchParams;
   const openId = projeto && z.uuid().safeParse(projeto).success ? projeto : null;
   const today = new Date().toISOString().slice(0, 10);
+  const level = (await getAccess())?.level("projetos") ?? 0;
 
-  const [projects, open, clients, team] = await Promise.all([
+  const [columns, projects, open, clients, team] = await Promise.all([
+    getColumns(),
     prisma.project.findMany({
       include: {
         client: { select: { name: true, company: true } },
@@ -65,6 +68,8 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
     openId ? getTeam() : [],
   ]);
 
+  // Projetos em colunas de entrega não atrasam nem contam como "em andamento".
+  const doneIds = new Set(columns.filter((c) => c.done).map((c) => c.id));
   const cards: Card[] = projects.map((p) => {
     const due = fromDbDate(p.dueDate);
     return {
@@ -75,7 +80,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       owner: p.owner,
       quote: p.quotes[0]?.number ?? null,
       due: due ? shortDate(due) : null,
-      late: Boolean(due && due < today && p.stage !== "no_ar"),
+      late: Boolean(due && due < today && !doneIds.has(p.stage)),
       tasksDone: p.tasks.filter((t) => t.done).length,
       tasksTotal: p.tasks.length,
       files: p._count.files,
@@ -83,20 +88,24 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       preview: p.previewUrl,
     };
   });
-  const inProgress = projects.filter((p) => p.stage !== "no_ar").length;
+  const inProgress = projects.filter((p) => !doneIds.has(p.stage)).length;
 
   return (
     <>
       <PageHeader
         title="Projetos"
-        subtitle={`Arraste os cards entre as etapas. Clique para abrir o projeto. ${inProgress} em andamento.`}
+        subtitle={`Arraste os cards entre as colunas e organize o quadro do jeito da equipe. Clique para abrir o projeto. ${inProgress} em andamento.`}
         actions={
           <Link href="/admin/projetos/novo" className="adm-btn">
             + Novo projeto
           </Link>
         }
       />
-      <Board columns={projectStages} cards={cards} />
+      <Board
+        columns={columns.map(({ id, name, wipLimit, done }) => ({ id, name, wipLimit, done }))}
+        cards={cards}
+        can={{ move: level >= 2, manage: level >= 2, remove: level >= 3 }}
+      />
 
       {open && (
         <ModalShell title={open.name}>

@@ -255,7 +255,9 @@ model Project {
   leadId           String?           @map("lead_id") @db.Uuid
   lead             Lead?             @relation(fields: [leadId], references: [id], onDelete: SetNull)
   service          String?
+  /// Coluna do quadro (ProjectColumn.id)
   stage            String            @default("briefing")
+  column           ProjectColumn     @relation(fields: [stage], references: [id], onDelete: Restrict)
   /// Ordem do card dentro da coluna do quadro
   position         Int               @default(0)
   valueCents       Int               @default(0) @map("value_cents")
@@ -283,6 +285,24 @@ model Project {
   @@index([clientId])
   @@index([stage, position])
   @@map("projects")
+}
+
+/// Colunas do quadro de projetos (Kanban), configuráveis pela equipe.
+model ProjectColumn {
+  /// As colunas originais mantêm a chave antiga ("briefing", "no_ar"...); as novas usam uuid.
+  id        String    @id @default(uuid())
+  name      String
+  /// Ordem da coluna no quadro (da esquerda para a direita)
+  position  Int       @default(0)
+  /// Limite de projetos em andamento na coluna (WIP); vazio = sem limite
+  wipLimit  Int?      @map("wip_limit")
+  /// Coluna de entrega: projetos aqui contam como concluídos (não atrasam nem entram em "em andamento")
+  done      Boolean   @default(false)
+  createdAt DateTime  @default(now()) @map("created_at")
+  projects  Project[]
+
+  @@index([position])
+  @@map("project_columns")
 }
 
 /// Checklist do projeto.

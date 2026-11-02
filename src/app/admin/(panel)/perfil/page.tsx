@@ -2,6 +2,7 @@ import ActionForm from "@/components/admin/ActionForm";
 import PageHeader from "@/components/admin/PageHeader";
 import UserFields from "@/components/admin/UserFields";
 import { prisma } from "@/lib/prisma";
+import { activeProject } from "@/lib/project-columns";
 import { requireUser } from "@/lib/session";
 import { updateProfile } from "../../_actions/account";
 import PasswordForm from "./PasswordForm";
@@ -18,7 +19,7 @@ export default async function ProfilePage() {
     Promise.all([
       prisma.lead.count({ where: { ownerId: me.id, status: { notIn: ["fechado", "perdido"] } } }),
       prisma.client.count({ where: { ownerId: me.id } }),
-      prisma.project.count({ where: { ownerId: me.id, stage: { not: "no_ar" } } }),
+      prisma.project.count({ where: { ownerId: me.id, ...activeProject } }),
     ]),
   ]);
 

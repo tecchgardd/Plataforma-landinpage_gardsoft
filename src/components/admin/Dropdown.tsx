@@ -28,7 +28,7 @@ type Props = {
  */
 export default function Dropdown({ button, buttonClass = "adm-icon-btn", label, align = "end", disabled, children }: Props) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left?: number; right?: number; maxHeight: number } | null>(null);
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; left?: number; right?: number; maxHeight: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const id = useId();
@@ -45,10 +45,17 @@ export default function Dropdown({ button, buttonClass = "adm-icon-btn", label, 
   useLayoutEffect(() => {
     if (!open || !buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
-    const top = rect.bottom + 6;
+    // No celular a barra de abas fixa cobre o rodapé da tela: o menu não pode ir para baixo dela.
+    const tabbar = document.querySelector(".adm-tabbar")?.getBoundingClientRect();
+    const floor = tabbar && tabbar.height > 0 ? tabbar.top : window.innerHeight;
+    const below = floor - rect.bottom - 18;
+    const above = rect.top - 18;
+    const height = menuRef.current?.scrollHeight ?? 0;
+    // Abre para cima quando não cabe embaixo (ex.: última linha da tabela) e há mais espaço em cima.
+    const up = height > below && above > below;
     setPos({
-      top,
-      maxHeight: Math.max(160, window.innerHeight - top - 12),
+      ...(up ? { bottom: window.innerHeight - rect.top + 6 } : { top: rect.bottom + 6 }),
+      maxHeight: Math.max(120, up ? above : below),
       ...(align === "end" ? { right: Math.max(8, window.innerWidth - rect.right) } : { left: Math.max(8, rect.left) }),
     });
   }, [open, align]);
@@ -120,8 +127,8 @@ export default function Dropdown({ button, buttonClass = "adm-icon-btn", label, 
             id={id}
             role="menu"
             aria-label={label}
-            className="adm-dropdown"
-            style={pos ? { top: pos.top, left: pos.left, right: pos.right, maxHeight: pos.maxHeight } : { visibility: "hidden" }}
+            className={`adm-dropdown ${pos?.bottom !== undefined ? "up" : ""}`}
+            style={pos ? { top: pos.top, bottom: pos.bottom, left: pos.left, right: pos.right, maxHeight: pos.maxHeight } : { visibility: "hidden" }}
             onKeyDown={onMenuKey}
           >
             <CloseContext.Provider value={close}>{children}</CloseContext.Provider>

@@ -7,7 +7,6 @@ import { prisma, toDbDate } from "@/lib/prisma";
 import { requireAccess } from "@/lib/access";
 import { logActivity } from "@/lib/activity";
 import { readUpload } from "@/lib/files";
-import { labelOf, projectStages, values } from "@/lib/admin/options";
 import { firstError, formObject, optionalDate, optionalText, optionalUuid, type FormState } from "@/lib/admin/form";
 
 const optionalUrl = z
@@ -21,7 +20,7 @@ const projectSchema = z.object({
   clientId: optionalUuid,
   ownerId: optionalText(60),
   service: optionalText(60),
-  stage: z.enum(values(projectStages)),
+  stage: z.string().trim().min(1, "Escolha a coluna do quadro.").max(60),
   startDate: optionalDate,
   dueDate: optionalDate,
   description: optionalText(20000),
@@ -34,7 +33,12 @@ const projectSchema = z.object({
 });
 
 const refresh = () => revalidatePath("/admin", "layout");
-const stageLabel = (stage: string) => labelOf(projectStages, stage);
+/** Nome de cada coluna do quadro (as colunas são configuráveis, então vêm do banco). */
+async function columnNames() {
+  const columns = await prisma.projectColumn.findMany({ select: { id: true, name: true } });
+  const names = new Map(columns.map((c) => [c.id, c.name]));
+  return (id: string) => names.get(id) ?? id;
+}
 
 async function systemNote(projectId: string, author: string, text: string) {
   await prisma.projectNote.create({ data: { projectId, author, text, kind: "sistema" } });
@@ -47,6 +51,10 @@ export async function saveProject(id: string | null, _: FormState, formData: For
   // Valores ficam só no orçamento vinculado ao projeto.
   const { startDate, dueDate, ...rest } = parsed.data;
   const data = { ...rest, startDate: toDbDate(startDate), dueDate: toDbDate(dueDate) };
+  const stageLabel = await columnNames();
+  if (!(await prisma.projectColumn.findUnique({ where: { id: data.stage }, select: { id: true } }))) {
+    return { error: "Essa coluna do quadro não existe mais. Recarregue a página e escolha outra." };
+  }
 
   if (id) {
     const before = await prisma.project.findUnique({ where: { id }, select: { stage: true } });
@@ -73,13 +81,14 @@ export async function saveProject(id: string | null, _: FormState, formData: For
 /** Arrastar e soltar no quadro: coloca o card na coluna `stage`, na posição `index`. */
 export async function moveProjectTo(id: string, stage: string, index: number) {
   const user = await requireAccess("projetos", 2);
-  const target = z.enum(values(projectStages)).safeParse(stage);
-  if (!target.success) return;
+  const target = await prisma.projectColumn.findUnique({ where: { id: stage }, select: { id: true } });
+  if (!target) return;
   const project = await prisma.project.findUnique({ where: { id }, select: { stage: true, name: true } });
   if (!project) return;
+  const stageLabel = await columnNames();
 
   const column = await prisma.project.findMany({
-    where: { stage: target.data, NOT: { id } },
+    where: { stage: target.id, NOT: { id } },
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
     select: { id: true },
   });
@@ -87,13 +96,13 @@ export async function moveProjectTo(id: string, stage: string, index: number) {
   order.splice(Math.max(0, Math.min(index, order.length)), 0, id);
   await prisma.$transaction(
     order.map((pid, position) =>
-      prisma.project.update({ where: { id: pid }, data: pid === id ? { stage: target.data, position } : { position } }),
+      prisma.project.update({ where: { id: pid }, data: pid === id ? { stage: target.id, position } : { position } }),
     ),
   );
 
-  if (project.stage !== target.data) {
-    await systemNote(id, user.name, `Moveu de "${stageLabel(project.stage)}" para "${stageLabel(target.data)}".`);
-    await logActivity(user, "moveu", "projeto", `Moveu ${project.name} para "${stageLabel(target.data)}"`, id);
+  if (project.stage !== target.id) {
+    await systemNote(id, user.name, `Moveu de "${stageLabel(project.stage)}" para "${stageLabel(target.id)}".`);
+    await logActivity(user, "moveu", "projeto", `Moveu ${project.name} para "${stageLabel(target.id)}"`, id);
   }
   refresh();
 }
@@ -105,6 +114,90 @@ export async function deleteProject(id: string) {
   if (project) await logActivity(user, "excluiu", "projeto", `Excluiu o projeto ${project.name}`, id);
   refresh();
   redirect("/admin/projetos");
+}
+
+/* ---------- colunas do quadro ---------- */
+
+export type ColumnResult = { error?: string };
+
+const columnSchema = z.object({
+  name: z.string().trim().min(1, "Dê um nome para a coluna.").max(40, "Use um nome com até 40 caracteres."),
+  wipLimit: z.number().int().min(1, "O limite WIP precisa ser pelo menos 1.").max(99).nullable(),
+  done: z.boolean(),
+});
+
+/** Nova coluna no fim do quadro (ou logo depois de `afterId`). */
+export async function createColumn(name: string, afterId?: string): Promise<ColumnResult> {
+  const user = await requireAccess("projetos", 2);
+  const parsed = columnSchema.shape.name.safeParse(name);
+  if (!parsed.success) return { error: firstError(parsed.error) };
+  const columns = await prisma.projectColumn.findMany({ orderBy: [{ position: "asc" }, { createdAt: "asc" }], select: { id: true } });
+  if (columns.length >= 20) return { error: "O quadro aceita no máximo 20 colunas." };
+  const after = afterId ? columns.findIndex((c) => c.id === afterId) : -1;
+  const at = after >= 0 ? after + 1 : columns.length;
+  const order = columns.map((c) => c.id);
+  await prisma.$transaction(async (tx) => {
+    const created = await tx.projectColumn.create({ data: { name: parsed.data, position: at }, select: { id: true } });
+    order.splice(at, 0, created.id);
+    for (const [position, cid] of order.entries()) {
+      await tx.projectColumn.update({ where: { id: cid }, data: { position } });
+    }
+  });
+  await logActivity(user, "criou", "projeto", `Criou a coluna "${parsed.data}" no quadro de projetos`);
+  refresh();
+  return {};
+}
+
+/** Renomeia a coluna, define o limite WIP e se ela é a coluna de entrega. */
+export async function updateColumn(id: string, input: { name: string; wipLimit: number | null; done: boolean }): Promise<ColumnResult> {
+  const user = await requireAccess("projetos", 2);
+  const parsed = columnSchema.safeParse(input);
+  if (!parsed.success) return { error: firstError(parsed.error) };
+  const before = await prisma.projectColumn.findUnique({ where: { id }, select: { name: true } });
+  if (!before) return { error: "Coluna não encontrada. Recarregue a página." };
+  await prisma.projectColumn.update({ where: { id }, data: parsed.data });
+  const renamed = before.name !== parsed.data.name ? ` (antes "${before.name}")` : "";
+  await logActivity(user, "editou", "projeto", `Editou a coluna "${parsed.data.name}"${renamed} do quadro de projetos`);
+  refresh();
+  return {};
+}
+
+/** Nova ordem das colunas, da esquerda para a direita (lista com todas as colunas). */
+export async function reorderColumns(ids: string[]): Promise<ColumnResult> {
+  await requireAccess("projetos", 2);
+  const current = await prisma.projectColumn.findMany({ select: { id: true } });
+  const known = new Set(current.map((c) => c.id));
+  if (ids.length !== known.size || new Set(ids).size !== ids.length || !ids.every((cid) => known.has(cid))) {
+    return { error: "O quadro mudou enquanto você organizava. Recarregue a página." };
+  }
+  await prisma.$transaction(ids.map((cid, position) => prisma.projectColumn.update({ where: { id: cid }, data: { position } })));
+  refresh();
+  return {};
+}
+
+/** Exclui a coluna; os projetos dela vão para o fim da coluna `moveTo`. */
+export async function deleteColumn(id: string, moveTo: string): Promise<ColumnResult> {
+  const user = await requireAccess("projetos", 3);
+  if (id === moveTo) return { error: "Escolha outra coluna para receber os projetos." };
+  const [column, target] = await Promise.all([
+    prisma.projectColumn.findUnique({ where: { id }, select: { name: true, projects: { select: { id: true }, orderBy: [{ position: "asc" }, { createdAt: "asc" }] } } }),
+    prisma.projectColumn.findUnique({ where: { id: moveTo }, select: { name: true } }),
+  ]);
+  if (!column || !target) return { error: "Coluna não encontrada. Recarregue a página." };
+
+  const last = await prisma.project.aggregate({ where: { stage: moveTo }, _max: { position: true } });
+  const start = (last._max.position ?? -1) + 1;
+  await prisma.$transaction([
+    ...column.projects.map((p, i) => prisma.project.update({ where: { id: p.id }, data: { stage: moveTo, position: start + i } })),
+    prisma.projectColumn.delete({ where: { id } }),
+  ]);
+  for (const p of column.projects) {
+    await systemNote(p.id, user.name, `A coluna "${column.name}" foi excluída: projeto movido para "${target.name}".`);
+  }
+  const moved = column.projects.length ? ` e moveu ${column.projects.length} projeto(s) para "${target.name}"` : "";
+  await logActivity(user, "excluiu", "projeto", `Excluiu a coluna "${column.name}" do quadro de projetos${moved}`);
+  refresh();
+  return {};
 }
 
 /* ---------- checklist ---------- */

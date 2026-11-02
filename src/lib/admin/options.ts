@@ -34,15 +34,6 @@ export const leadSources = [
   { value: "outro", label: "Outro" },
 ] as const;
 
-export const projectStages = [
-  { value: "briefing", label: "Briefing inicial" },
-  { value: "prototipo", label: "Protótipo" },
-  { value: "design", label: "Design" },
-  { value: "codificacao", label: "Codificação e testes" },
-  { value: "entrega", label: "Briefing de entrega" },
-  { value: "no_ar", label: "No ar" },
-] as const;
-
 export const campaignChannels = [
   { value: "instagram", label: "Instagram" },
   { value: "facebook", label: "Facebook" },

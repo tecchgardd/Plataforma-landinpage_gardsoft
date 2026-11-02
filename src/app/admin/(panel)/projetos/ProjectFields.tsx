@@ -1,8 +1,9 @@
 import { Input, Select, TextArea } from "@/components/admin/Fields";
 import { fromDbDate, type Client, type Project } from "@/lib/prisma";
-import { projectStages, serviceOptions } from "@/lib/admin/options";
+import { serviceOptions } from "@/lib/admin/options";
+import { getColumns } from "@/lib/project-columns";
 
-export default function ProjectFields({
+export default async function ProjectFields({
   project,
   clients,
   team,
@@ -13,6 +14,7 @@ export default function ProjectFields({
   team: { id: string; name: string }[];
   clientId?: string;
 }) {
+  const columns = await getColumns();
   return (
     <>
       <fieldset className="adm-fieldset">
@@ -33,7 +35,7 @@ export default function ProjectFields({
           empty="Sem responsável"
         />
         <Select label="Serviço" name="service" options={serviceOptions} defaultValue={project?.service} empty="Não definido" />
-        <Select label="Etapa" name="stage" options={projectStages} defaultValue={project?.stage ?? "briefing"} />
+        <Select label="Coluna do quadro" name="stage" options={columns.map((c) => ({ value: c.id, label: c.name }))} defaultValue={project?.stage ?? columns[0]?.id} />
         <Input label="Início" name="startDate" type="date" defaultValue={fromDbDate(project?.startDate)} />
         <Input label="Entrega prevista" name="dueDate" type="date" defaultValue={fromDbDate(project?.dueDate)} />
       </fieldset>
