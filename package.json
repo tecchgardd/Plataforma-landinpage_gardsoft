@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build --webpack",
+    "vercel-build": "prisma generate && prisma migrate deploy && next build --webpack",
     "start": "next start",
     "typecheck": "prisma generate && next typegen && tsc --noEmit",
     "postinstall": "prisma generate",
